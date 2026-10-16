@@ -173,14 +173,24 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
   ].filter(Boolean))];
   let lastError = null;
 
+  // Limites de temps : sans elles, un appel Gemini bloqué laisse « Scan en cours… » indéfiniment
+  const PER_MODEL_TIMEOUT_MS = 45000;
+  const TOTAL_TIMEOUT_MS = 100000;
+  const deadline = Date.now() + TOTAL_TIMEOUT_MS;
+
   for (const model of models) {
+    const remainingMs = deadline - Date.now();
+    if (remainingMs <= 0) break;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), Math.min(PER_MODEL_TIMEOUT_MS, remainingMs));
     try {
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody)
+          body: JSON.stringify(requestBody),
+          signal: controller.signal
         }
       );
 
@@ -255,8 +265,13 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
       break;
     } catch (err) {
       if (err instanceof PrescriptionAnalysisError) throw err;
+      if (err?.name === 'AbortError') {
+        err = new Error(`${model} : délai de réponse dépassé`);
+      }
       console.warn(`Tentative modèle ${model} échouée:`, err.message);
       lastError = err;
+    } finally {
+      clearTimeout(timer);
     }
   }
 
