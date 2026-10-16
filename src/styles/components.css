@@ -1,0 +1,646 @@
+/* PharmaGarde Minimalist Components Styling */
+
+/* Header / Top Bar */
+.pg-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background-color: #FFFFFF;
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.pg-logo-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pg-logo-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background-color: var(--color-mint-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pg-logo-cross {
+  position: relative;
+  width: 18px;
+  height: 18px;
+}
+.pg-logo-cross::before, .pg-logo-cross::after {
+  content: '';
+  position: absolute;
+  background-color: var(--color-primary);
+  border-radius: 1.5px;
+}
+.pg-logo-cross::before {
+  top: 0;
+  left: 6px;
+  width: 6px;
+  height: 18px;
+}
+.pg-logo-cross::after {
+  top: 6px;
+  left: 0;
+  width: 18px;
+  height: 6px;
+}
+
+.pg-logo-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 6.5px;
+  height: 6.5px;
+  border-radius: 50%;
+  background-color: var(--color-accent-green);
+}
+
+.pg-logo-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.pg-logo-name {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.pg-logo-subtitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+}
+
+.pg-avatar-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* Floating Mode Bar / Role Switcher */
+.pg-mode-bar {
+  background: #004740;
+  color: #D6F6EE;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 50;
+}
+
+.pg-mode-pill-toggle {
+  display: inline-flex;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 2px;
+  border-radius: var(--radius-pill);
+  gap: 2px;
+}
+
+.pg-mode-pill-btn {
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: #A2CBC3;
+}
+
+.pg-mode-pill-btn.active {
+  background: var(--color-mint);
+  color: var(--color-primary-dark);
+}
+
+/* Bottom Navigation Bar */
+.pg-bottom-nav {
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  background: #FFFFFF;
+  border-top: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 8px 0 10px;
+  z-index: 40;
+}
+
+.pg-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  flex: 1;
+  padding: 4px 0;
+  position: relative;
+}
+
+.pg-nav-item.active {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.pg-nav-badge {
+  position: absolute;
+  top: -2px;
+  right: calc(50% - 16px);
+  background-color: var(--color-alert-red);
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+}
+
+/* Page Content */
+.pg-content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background-color: #FFFFFF;
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: var(--color-primary);
+  color: #FFFFFF;
+  padding: 14px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+.btn-primary:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.btn-mint {
+  background-color: var(--color-mint);
+  color: var(--color-primary-dark);
+  padding: 14px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.btn-secondary {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-main);
+  padding: 12px 16px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--color-border);
+}
+
+.btn-call {
+  background-color: var(--color-primary);
+  color: white;
+  padding: 10px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.btn-itinerary {
+  background-color: var(--color-mint);
+  color: var(--color-primary-dark);
+  padding: 10px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.btn-itinerary.subtle {
+  background-color: #EAEFEF;
+  color: #1A302E;
+}
+
+/* Badges & Pills */
+.badge-duty {
+  background-color: #064E3B;
+  color: #ECFDF5;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.badge-priority {
+  background-color: var(--color-mint-light);
+  color: var(--color-primary-dark);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-mint);
+}
+
+.badge-complete {
+  background-color: #D1FAE5;
+  color: #065F46;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+}
+
+.badge-partial {
+  background-color: #FEF3C7;
+  color: #92400E;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+}
+
+.badge-stock {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #047857;
+}
+
+.badge-stock.out {
+  color: var(--color-alert-red);
+}
+
+/* Quick Access Chips */
+.quick-chip-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.quick-chip {
+  background-color: #D6F6EE;
+  color: var(--color-primary-dark);
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.quick-chip:hover {
+  background-color: #C2F0E4;
+}
+
+/* Cards */
+.pg-card {
+  background: #FFFFFF;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Resilient Mode Banner */
+.resilient-banner {
+  background: #F4F6F6;
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid #E2E8F0;
+}
+
+.resilient-icon-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #D1F4EC;
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.resilient-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--color-primary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.resilient-desc {
+  font-size: 12px;
+  color: #4A5568;
+  line-height: 1.35;
+}
+
+/* Emergency advice box */
+.emergency-advice-box {
+  background-color: #E2FAF4;
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid #B6EFE2;
+}
+
+/* Modal Dialogs */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 30, 26, 0.6);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.modal-sheet {
+  background: white;
+  width: 100%;
+  max-width: 430px;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding: 24px 20px 28px;
+  max-height: 88vh;
+  overflow-y: auto;
+  animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* From Uiverse.io by adamgiebl - Slow Connection Pulse Loader */
+.dots-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.dot {
+  height: 20px;
+  width: 20px;
+  margin-right: 10px;
+  border-radius: 10px;
+  background-color: #b3d4fc;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.dot:last-child {
+  margin-right: 0;
+}
+
+.dot:nth-child(1) {
+  animation-delay: -0.3s;
+}
+
+.dot:nth-child(2) {
+  animation-delay: -0.1s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.1s;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.8);
+    background-color: #b3d4fc;
+    box-shadow: 0 0 0 0 rgba(178, 212, 252, 0.7);
+  }
+
+  50% {
+    transform: scale(1.2);
+    background-color: #6793fb;
+    box-shadow: 0 0 0 10px rgba(178, 212, 252, 0);
+  }
+
+  100% {
+    transform: scale(0.8);
+    background-color: #b3d4fc;
+    box-shadow: 0 0 0 0 rgba(178, 212, 252, 0.7);
+  }
+}
+
+/* Slow Connection Info Box */
+.slow-connection-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  gap: 12px;
+}
+
+/* =========================================
+   Realistic Smartphone Simulator Frame
+   ========================================= */
+.phone-mockup-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .phone-mockup-wrapper {
+    max-width: 100vw;
+    width: 100vw;
+  }
+}
+
+.phone-mockup-wrapper.split-screen {
+  max-width: 440px;
+  height: 100dvh;
+}
+
+.phone-screen-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--color-bg-page, #F8FAFA);
+  border-radius: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Status Bar */
+.phone-status-bar {
+  height: 44px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FFFFFF;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  font-size: 13px;
+  font-weight: 700;
+  color: #0F172A;
+  z-index: 50;
+  flex-shrink: 0;
+}
+
+.phone-dynamic-island {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 105px;
+  height: 24px;
+  background: #000000;
+  border-radius: 999px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 10px;
+  pointer-events: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.phone-island-camera {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #1E293B;
+  border: 1px solid #334155;
+}
+
+.phone-home-indicator {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 134px;
+  height: 4.5px;
+  background: rgba(15, 23, 42, 0.3);
+  border-radius: 999px;
+  z-index: 60;
+  pointer-events: none;
+}
+
+/* On actual small smartphones, adapt to fill 100% */
+@media (max-width: 480px) {
+  .phone-mockup-wrapper {
+    max-width: 100%;
+    height: 100vh;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .phone-screen-inner {
+    border-radius: 0;
+  }
+  .phone-dynamic-island {
+    display: none;
+  }
+}
+
+@keyframes inlineCameraSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(50px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <rect width="100" height="100" rx="26" fill="#E6FAF5" />
+  <!-- Main Teal Cross -->
+  <path d="M42 22 H58 V42 H78 V58 H58 V78 H42 V58 H22 V42 H42 Z" fill="#005F56" />
+  <!-- Top Right Accent Dot -->
+  <circle cx="76" cy="28" r="7" fill="#15803D" />
+</svg>

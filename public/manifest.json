@@ -1,0 +1,31 @@
+{
+  "short_name": "PharmaGarde",
+  "name": "PharmaGarde - Officine & Garde",
+  "description": "Disponibilité immédiate de médicaments et pharmacies de garde à Dakar",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo-icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    }
+  ],
+  "start_url": "/",
+  "scope": "/",
+  "background_color": "#FFFFFF",
+  "theme_color": "#005F56",
+  "display": "standalone",
+  "orientation": "portrait"
+}
