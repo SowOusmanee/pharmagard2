@@ -14,11 +14,8 @@ export default function ProcessingScreen({ photoPayload, onAnalysisComplete, onR
     async function runProcessing() {
       try {
         setErrorMessage(null);
-        const isReal = Boolean(photoPayload?.isRealPhoto || photoPayload?.dataUrl);
-
-        const result = await analyzePrescription(photoPayload?.dataUrl, {
-          samplePresetId: photoPayload?.preset?.previewSvg,
-          isRealPhoto: isReal,
+        const result = await analyzePrescription(photoPayload?.dataUrl || null, {
+          presetMedicines: photoPayload?.dataUrl ? null : photoPayload?.preset?.medicines,
           onProgress: ({ stage, percent }) => {
             if (!isMounted) return;
             const idx = OCR_STAGES.findIndex((s) => s.id === stage.id);

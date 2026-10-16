@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, CheckCircle2, X } from 'lucide-react';
+import { AlertTriangle, Bell, CheckCircle2, X } from 'lucide-react';
 
 export default function ToastAlert({ toast, onClose, onAction }) {
   if (!toast) return null;
@@ -33,15 +33,15 @@ export default function ToastAlert({ toast, onClose, onAction }) {
             width: '32px',
             height: '32px',
             borderRadius: '50%',
-            background: 'var(--color-mint)',
-            color: 'var(--color-primary-dark)',
+            background: toast.type === 'error' ? '#EF4444' : 'var(--color-mint)',
+            color: toast.type === 'error' ? '#FFFFFF' : 'var(--color-primary-dark)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0
           }}
         >
-          {toast.type === 'confirmed' ? <CheckCircle2 size={18} /> : <Bell size={18} />}
+          {toast.type === 'confirmed' ? <CheckCircle2 size={18} /> : toast.type === 'error' ? <AlertTriangle size={18} /> : <Bell size={18} />}
         </div>
         <div>
           <div style={{ fontSize: '13px', fontWeight: 800, color: '#A3E8D8' }}>

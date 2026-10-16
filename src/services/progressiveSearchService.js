@@ -182,6 +182,7 @@ class ProgressiveSearchEngine {
             pharmacyId: pharmacy.id,
             medicineName: med.name,
             dosage: med.dosage || '',
+            matchedName: med.dbMatch?.name || null,
             prescriptionId: this.currentSearch.prescriptionId,
             prescriptionPhoto: this.currentSearch.prescriptionPhoto,
             medicinesList: this.currentSearch.medicines,

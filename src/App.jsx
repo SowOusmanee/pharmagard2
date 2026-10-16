@@ -15,6 +15,7 @@ import { initRealLocationAndPharmacies, fetchNearbyPharmacies, fetchNearbyPharma
 import TopBar from './components/common/TopBar';
 import BottomNav from './components/common/BottomNav';
 import ModeSwitcher from './components/common/ModeSwitcher';
+import ToastAlert from './components/common/ToastAlert';
 import CallSimulatorModal from './components/common/CallSimulatorModal';
 import PhoneSimulator from './components/common/PhoneSimulator';
 
@@ -157,6 +158,19 @@ export default function App() {
   const [callPharmacy, setCallPharmacy] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
+  // Lien direct par rôle : ?role=patient ou ?role=pharmacie (connexion pharmacie de test automatique)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const requested = (new URLSearchParams(window.location.search).get('role') || '').toLowerCase();
+    if (['pharmacie', 'pharmacy', 'pharmacien', 'pharmacist'].includes(requested)) {
+      const res = authService.loginWithEmail({ email: 'admin', password: 'admin' });
+      if (res?.success) handleAuthSuccess(res.user);
+    } else if (requested === 'patient') {
+      setRole('patient');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Authentification réussie (Patient ou Pharmacien Démo admin/admin)
   const handleAuthSuccess = (user) => {
     if (user && (user.role === 'pharmacist' || user.isAdminDemo)) {
@@ -266,13 +280,10 @@ export default function App() {
     setPatientScreen('home'); // Ensure we remain on the first/home screen!
 
     try {
-      const result = await analyzePrescription(
-        photoPayload?.dataUrl || photoPayload?.preset?.imageUrl,
-        {
-          samplePresetId: photoPayload?.preset?.id,
-          isRealPhoto: Boolean(photoPayload?.dataUrl)
-        }
-      );
+      // Une vraie photo est toujours lue par Gemini ; l'exemple de démo n'est utilisé que sans photo
+      const result = await analyzePrescription(photoPayload?.dataUrl || null, {
+        presetMedicines: photoPayload?.dataUrl ? null : photoPayload?.preset?.medicines
+      });
 
       const resolvedPrescriptionId = result.prescriptionId || `presc_${Date.now()}`;
       setAnalysisData(result);
@@ -293,25 +304,17 @@ export default function App() {
 
       // Le patient reste sur l'écran d'accueil jusqu'à confirmation d'un pharmacien !
     } catch (err) {
-      console.warn("Scan fallback:", err);
-      const fallbackId = `presc_${Date.now()}`;
-      const fallbackMeds = [
-        { name: "Amoxicilline", dosage: "500 mg" },
-        { name: "Paracétamol", dosage: "1 g" },
-        { name: "Ibuprofène", dosage: "400 mg" }
-      ];
-      setAnalysisData({ prescriptionId: fallbackId, medicines: fallbackMeds });
-      setActivePrescriptionMedicines(fallbackMeds);
-      setPrescriptionId(fallbackId);
-      prescriptionIdRef.current = fallbackId;
-
-      setScanStatusText('Recherche de pharmacie...');
-      progressiveSearchService.startSearch({
-        medicines: fallbackMeds,
-        prescriptionId: fallbackId,
-        prescriptionPhoto: photoPayload?.dataUrl || photoPayload?.preset?.imageUrl,
-        userLocation: userLocationRef.current
+      // Pas de médicaments inventés : on arrête le scan et on explique le problème
+      console.warn('Analyse ordonnance échouée:', err);
+      setIsScanning(false);
+      setScanSuccess(false);
+      setScanStatusText('Scan en cours...');
+      setToast({
+        type: 'error',
+        title: "Ordonnance non lue",
+        message: err?.message || "Impossible de lire l'ordonnance. Réessayez avec une photo plus nette."
       });
+      setTimeout(() => setToast(null), 8000);
     }
   };
 
@@ -631,6 +634,8 @@ export default function App() {
   return (
     <div className="app-layout-wrapper">
       {role === 'patient' ? renderPatientInterface() : renderPharmacyInterface()}
+
+      <ToastAlert toast={toast} onClose={() => setToast(null)} />
 
       {/* Modals and Overlays */}
 

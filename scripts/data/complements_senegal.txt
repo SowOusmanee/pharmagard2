@@ -1,0 +1,35 @@
+# Produits courants au Sénégal absents de la liste ANSM (une dénomination par ligne, même format)
+# Les lignes commençant par # sont ignorées.
+COARTEM 20 mg/120 mg, comprimé
+COARTEM DISPERSIBLE 20 mg/120 mg, comprimé dispersible
+ARTEMETHER/LUMEFANTRINE 20 mg/120 mg, comprimé
+ARTEMETHER/LUMEFANTRINE 80 mg/480 mg, comprimé
+ARTEMETHER 80 mg/ml, solution injectable
+ARTESUNATE 60 mg, poudre pour solution injectable
+ARTESUNATE/AMODIAQUINE 100 mg/270 mg, comprimé
+QUININE 300 mg, comprimé
+QUININE 600 mg/2 ml, solution injectable
+METRONIDAZOLE 250 mg, comprimé
+METRONIDAZOLE 500 mg, comprimé
+METRONIDAZOLE 125 mg/5 ml, suspension buvable
+METRONIDAZOLE 500 mg/100 ml, solution pour perfusion
+SELS DE REHYDRATATION ORALE (SRO), poudre pour solution buvable en sachet
+ZINC 20 mg, comprimé dispersible
+COTRIMOXAZOLE 480 mg, comprimé
+COTRIMOXAZOLE 960 mg, comprimé
+SERINGUE 2 ml, dispositif médical
+SERINGUE 5 ml, dispositif médical
+SERINGUE 10 ml, dispositif médical
+SERINGUE 20 ml, dispositif médical
+EPICRANIENNE, dispositif médical
+PERFUSEUR, dispositif médical
+CATHETER, dispositif médical
+AIGUILLE, dispositif médical
+COMPRESSES STERILES, dispositif médical
+SPARADRAP, dispositif médical
+COTON HYDROPHILE, dispositif médical
+BANDE DE CREPE, dispositif médical
+GANTS STERILES, dispositif médical
+SERUM GLUCOSE 5 POUR CENT, solution pour perfusion
+SERUM SALE 0,9 POUR CENT, solution pour perfusion
+RINGER LACTATE, solution pour perfusion

@@ -148,6 +148,16 @@ export default function AvailabilityRequestCard({
                     {med.dosage}
                   </span>
                 )}
+                {/* Nom officiel trouvé dans la base quand la lecture OCR diffère (faute probable) */}
+                {med.matchedName &&
+                  med.matchedName.toLowerCase().split(' ')[0] !== (med.medicineName || '').toLowerCase().split(' ')[0] && (
+                    <span
+                      title="Correspondance trouvée dans la base des médicaments"
+                      style={{ fontSize: '12px', fontWeight: 600, color: '#0F766E', whiteSpace: 'nowrap' }}
+                    >
+                      ≈ {med.matchedName}
+                    </span>
+                  )}
               </div>
 
               {/* Bouton de validation vert et croix rouge */}

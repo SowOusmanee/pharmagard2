@@ -2,6 +2,19 @@
 // Anonymized extraction of medications with strict patient privacy protection
 
 import { storageService } from './storageService.js';
+import { findBestMedicineMatch } from './medicineSearchService.js';
+
+// Formats acceptés directement par Gemini (inline_data)
+const GEMINI_INLINE_MIME = /^data:(image\/(jpeg|jpg|png|webp|heic|heif)|application\/pdf);base64,/i;
+
+// Erreur lisible par l'utilisateur (affichée à l'écran au lieu de médicaments inventés)
+export class PrescriptionAnalysisError extends Error {
+  constructor(message, code) {
+    super(message);
+    this.name = 'PrescriptionAnalysisError';
+    this.code = code;
+  }
+}
 
 export const OCR_STAGES = [
   { id: 'reading', label: "Lecture sécurisée du document", durationMs: 900 },
@@ -15,7 +28,7 @@ export const OCR_STAGES = [
  * - Only pharmaceutical data (molecule, dosage, form, instructions) is extracted
  */
 export async function analyzePrescription(imagePayload, options = {}) {
-  const { onProgress, samplePresetId, isRealPhoto } = options;
+  const { onProgress, presetMedicines } = options;
 
   // Save temporary image reference with 10-minute auto-expiry for medical privacy
   let imageMeta = null;
@@ -30,44 +43,39 @@ export async function analyzePrescription(imagePayload, options = {}) {
 
   const apiKey = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY) || (typeof window !== 'undefined' ? window.__PHARMAGARDE_AI_KEY__ : null);
 
-  // Check if we have a real base64 raster image (JPEG / PNG / WebP)
-  const isBase64Raster = typeof imagePayload === 'string' && /^data:image\/(jpeg|png|webp|jpg);base64,/i.test(imagePayload);
+  let medicines;
 
-  let medicines = null;
+  if (!imagePayload) {
+    // Exemple de démonstration choisi explicitement : on affiche ses médicaments tels quels
+    if (!Array.isArray(presetMedicines) || presetMedicines.length === 0) {
+      throw new PrescriptionAnalysisError("Aucune photo reçue. Reprenez la photo ou importez une image de l'ordonnance.", 'NO_IMAGE');
+    }
+    medicines = presetMedicines.map((m, index) => ({
+      id: `med_demo_${Date.now()}_${index}`,
+      confidence: 0.95,
+      isVerified: true,
+      ...m
+    }));
+  } else {
+    if (!apiKey) {
+      throw new PrescriptionAnalysisError(
+        "Lecture automatique indisponible : clé Gemini manquante (VITE_GEMINI_API_KEY dans le fichier .env).",
+        'NO_API_KEY'
+      );
+    }
+    if (typeof imagePayload !== 'string' || !/^data:(image\/|application\/pdf)/i.test(imagePayload)) {
+      throw new PrescriptionAnalysisError("Format de fichier non pris en charge. Utilisez une photo (JPG, PNG) ou un PDF.", 'BAD_FORMAT');
+    }
+
+    if (onProgress) onProgress({ stage: OCR_STAGES[1], percent: 65 });
+    const optimizedImage = await optimizeImageForOcr(imagePayload);
+    if (!GEMINI_INLINE_MIME.test(optimizedImage)) {
+      throw new PrescriptionAnalysisError("Format d'image non pris en charge. Utilisez une photo JPG ou PNG.", 'BAD_FORMAT');
+    }
+    medicines = (await callVisionExtractionApi(optimizedImage, apiKey)).map(attachDatabaseMatch);
+  }
+
   let hasLowConfidence = false;
-  let extractionError = null;
-
-  if (apiKey && isBase64Raster) {
-    try {
-      if (onProgress) onProgress({ stage: OCR_STAGES[1], percent: 65 });
-      const optimizedImage = await optimizeImageForOcr(imagePayload);
-      medicines = await callVisionExtractionApi(optimizedImage, apiKey);
-    } catch (apiError) {
-      console.warn('Erreur du moteur de vision, bascule automatique sur les données de secours:', apiError);
-      extractionError = apiError;
-    }
-  }
-
-  // Graceful fallback: if extraction returned no medicines or had an API error, use default sample
-  if (!medicines || medicines.length === 0) {
-    if (samplePresetId === 'rx2') {
-      medicines = [
-        { id: 'med_ext_4', name: "Sérum oral (SRO)", dosage: "Sachet 1L", confidence: 0.98, isVerified: true },
-        { id: 'med_ext_5', name: "Métronidazole", dosage: "500 mg", confidence: 0.91, isVerified: true }
-      ];
-    } else if (samplePresetId === 'rx3') {
-      medicines = [
-        { id: 'med_ext_6', name: "Artéméther", dosage: "80 mg", confidence: 0.95, isVerified: true },
-        { id: 'med_ext_7', name: "Paracétamol", dosage: "500 mg", confidence: 0.92, isVerified: true }
-      ];
-    } else {
-      medicines = [
-        { id: 'med_ext_1', name: "Amoxicilline", dosage: "500 mg", confidence: 0.96, isVerified: true },
-        { id: 'med_ext_2', name: "Paracétamol", dosage: "1 g", confidence: 0.94, isVerified: true },
-        { id: 'med_ext_3', name: "Ibuprofène", dosage: "400 mg", confidence: 0.88, isVerified: true }
-      ];
-    }
-  }
 
   // Check if any extracted medicine has low confidence
   hasLowConfidence = medicines.some((m) => m.confidence && m.confidence < 0.70);
@@ -90,7 +98,7 @@ export async function analyzePrescription(imagePayload, options = {}) {
  * Calls the multimodal vision API with strict anonymisation prompt
  */
 async function callVisionExtractionApi(dataUrl, apiKey) {
-  const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
+  const match = dataUrl.match(/^data:((?:image|application)\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
   if (!match) {
     throw new Error('Format image invalide');
   }
@@ -152,13 +160,17 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
   };
 
   // Modèles disponibles dans l'ordre de priorité (vision OCR haute précision)
-  const models = [
+  // VITE_GEMINI_MODEL permet de forcer un modèle précis sans toucher au code
+  const preferredModel = typeof import.meta !== 'undefined' ? import.meta.env?.VITE_GEMINI_MODEL : null;
+  const models = [...new Set([
+    preferredModel,
     'gemini-2.5-flash',
+    'gemini-flash-latest',
     'gemini-3.5-flash',
     'gemini-3.7-flash',
     'gemini-3.1-flash-lite',
     'gemini-flash-lite-latest'
-  ];
+  ].filter(Boolean))];
   let lastError = null;
 
   for (const model of models) {
@@ -174,7 +186,12 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData?.error?.message || `HTTP ${response.status}`);
+        const apiMessage = errorData?.error?.message || `HTTP ${response.status}`;
+        // Clé invalide / refusée : inutile d'essayer les autres modèles
+        if (response.status === 400 && /api key/i.test(apiMessage) || response.status === 401 || response.status === 403) {
+          throw new PrescriptionAnalysisError(`Clé Gemini refusée : ${apiMessage}`, 'BAD_API_KEY');
+        }
+        throw new Error(`${model} : ${apiMessage}`);
       }
 
       const data = await response.json();
@@ -230,21 +247,58 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
           isVerified: typeof item.confidence === 'number' ? item.confidence >= 0.70 : true
         }));
       }
+      // Réponse valide mais aucun produit reconnu
+      lastError = new PrescriptionAnalysisError(
+        "Aucun médicament lisible sur la photo. Cadrez l'ordonnance en entier, avec un bon éclairage, puis réessayez.",
+        'NO_MEDICINE'
+      );
+      break;
     } catch (err) {
+      if (err instanceof PrescriptionAnalysisError) throw err;
       console.warn(`Tentative modèle ${model} échouée:`, err.message);
       lastError = err;
     }
   }
 
-  throw lastError || new Error("Échec d'analyse du document");
+  if (lastError instanceof PrescriptionAnalysisError) throw lastError;
+  throw new PrescriptionAnalysisError(
+    `Le service de lecture d'ordonnance ne répond pas (${lastError?.message || 'erreur inconnue'}). Réessayez dans un instant.`,
+    'API_UNAVAILABLE'
+  );
+}
+
+/**
+ * Rapproche chaque produit lu de la base officielle des médicaments.
+ * Un produit introuvable n'est pas supprimé mais marqué « à vérifier ».
+ */
+function attachDatabaseMatch(med) {
+  const match = findBestMedicineMatch(med.name, med.dosage);
+  if (!match) {
+    return { ...med, dbMatch: null, isVerified: false };
+  }
+  return {
+    ...med,
+    dbMatch: {
+      id: match.item.id,
+      name: match.item.name,
+      dosage: match.item.dosage,
+      form: match.item.form,
+      fullTitle: match.item.fullTitle,
+      score: match.score
+    },
+    // Faute de lecture probable si le nom a dû être corrigé
+    isVerified: med.isVerified && match.score === 1
+  };
 }
 
 /**
  * Optimizes oversized mobile photos for OCR transmission
+ * (convertit aussi en JPEG quand le navigateur sait décoder l'image ; PDF transmis tel quel)
  */
 function optimizeImageForOcr(dataUrl, maxDimension = 1800, quality = 0.90) {
   return new Promise((resolve) => {
     if (typeof window === 'undefined' || !window.Image) return resolve(dataUrl);
+    if (/^data:application\/pdf/i.test(dataUrl)) return resolve(dataUrl);
     const img = new window.Image();
     img.onload = () => {
       let width = img.width;

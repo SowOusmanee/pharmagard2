@@ -105,14 +105,13 @@ export default function HomeScreen({ onStartScan, onNavigateToPharmacies, onSear
       }
     }
 
-    // Fallback: use demo preset
+    // Caméra indisponible : pas d'exemple de démo à la place de la vraie photo
     stopCameraStream();
     setIsInlineCameraOpen(false);
     onCameraClosed?.();
     onStartScan?.({
       dataUrl: null,
-      type: 'camera',
-      preset: SAMPLE_PRESCRIPTIONS[0]
+      type: 'camera'
     });
   };
 
