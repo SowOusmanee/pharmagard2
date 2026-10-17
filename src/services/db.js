@@ -100,8 +100,13 @@ class DatabaseService {
     this.initDatabase();
 
     if (broadcastChannel) {
+      // Onglets du même navigateur : ils partagent le stockage, leurs messages relayés par le
+      // cloud sont donc ignorés (sinon une copie allégée, sans photo, peut écraser la demande)
+      this.sameBrowserSenders = new Set();
       broadcastChannel.onmessage = (event) => {
-        this.notifyLocalListeners(event.data);
+        const { senderId, ...data } = event.data || {};
+        if (senderId) this.sameBrowserSenders.add(senderId);
+        this.notifyLocalListeners(data);
       };
     }
 
@@ -128,6 +133,7 @@ class DatabaseService {
             event = raw;
           }
           if (!event || !event.type || event.senderId === this.clientId) return;
+          if (this.sameBrowserSenders?.has(event.senderId)) return;
 
           // Messages regroupés (voir flushCloudQueue)
           if (event.type === 'BATCH' && Array.isArray(event.events)) {
@@ -290,7 +296,7 @@ class DatabaseService {
     this.notifyLocalListeners(event);
     if (broadcastChannel) {
       try {
-        broadcastChannel.postMessage(event);
+        broadcastChannel.postMessage({ ...event, senderId: this.clientId });
       } catch (e) {
         console.error('BroadcastChannel post error:', e);
       }

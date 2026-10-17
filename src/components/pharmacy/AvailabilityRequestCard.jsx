@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { Clock, Check, X } from 'lucide-react';
+import { normalizeMedicineQuery } from '../../services/medicineSearchService';
+
+// Premier mot sans accents ni majuscules : « Métronidazole » et « Metronidazole » sont le même nom
+const firstWord = (name) => normalizeMedicineQuery(name).split(' ')[0];
 
 export default function AvailabilityRequestCard({
   group,
@@ -149,7 +153,7 @@ export default function AvailabilityRequestCard({
                 )}
                 {/* Nom officiel trouvé dans la base quand la lecture OCR diffère (faute probable) */}
                 {med.matchedName &&
-                  med.matchedName.toLowerCase().split(' ')[0] !== (med.medicineName || '').toLowerCase().split(' ')[0] && (
+                  firstWord(med.matchedName) !== firstWord(med.medicineName) && (
                     <span
                       title="Correspondance trouvée dans la base des médicaments"
                       style={{ fontSize: '12px', fontWeight: 600, color: '#0F766E', whiteSpace: 'nowrap' }}
