@@ -294,6 +294,15 @@ export default function App() {
       // Transition : le terme "Scan" se transforme en "Recherche de pharmacie..."
       setScanStatusText('Recherche de pharmacie...');
 
+      if (result.missingLines > 0) {
+        setToast({
+          type: 'error',
+          title: 'Ordonnance partiellement lue',
+          message: `${result.missingLines} ligne(s) de l'ordonnance n'ont pas pu être lues. Le pharmacien a la photo pour vérifier.`
+        });
+        setTimeout(() => setToast(null), 10000);
+      }
+
       // Envoi de la demande aux pharmacies par rayon progressif
       progressiveSearchService.startSearch({
         medicines: result.medicines || [],

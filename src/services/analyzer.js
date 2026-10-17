@@ -44,6 +44,7 @@ export async function analyzePrescription(imagePayload, options = {}) {
   const apiKey = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY) || (typeof window !== 'undefined' ? window.__PHARMAGARDE_AI_KEY__ : null);
 
   let medicines;
+  let missingLines = 0;
 
   if (!imagePayload) {
     // Exemple de démonstration choisi explicitement : on affiche ses médicaments tels quels
@@ -72,7 +73,10 @@ export async function analyzePrescription(imagePayload, options = {}) {
     if (!GEMINI_INLINE_MIME.test(optimizedImage)) {
       throw new PrescriptionAnalysisError("Format d'image non pris en charge. Utilisez une photo JPG ou PNG.", 'BAD_FORMAT');
     }
-    medicines = (await callVisionExtractionApi(optimizedImage, apiKey)).map(attachDatabaseMatch);
+    const extraction = await callVisionExtractionApi(optimizedImage, apiKey);
+    medicines = extraction.medicines.map(attachDatabaseMatch);
+    // Lignes de l'ordonnance que Gemini a comptées mais pas réussi à lire
+    missingLines = extraction.lineCount ? Math.max(extraction.lineCount - medicines.length, 0) : 0;
   }
 
   let hasLowConfidence = false;
@@ -88,6 +92,7 @@ export async function analyzePrescription(imagePayload, options = {}) {
     success: true,
     prescriptionId: `presc_${Date.now()}`,
     medicines,
+    missingLines,
     hasLowConfidence,
     imageMeta,
     timestamp: Date.now()
@@ -118,6 +123,10 @@ DIRECTIVES ABSOLUES DE SÉCURITÉ ET D'EXTRACTION MÉDICALE :
 3. ATTENTION AUX TAMPONS / CACHETS : Lis attentivement les lignes manuscrites même si elles touchent ou sont adjacentes à un tampon médical ou cachet rond (ex: "Seringues 10cc - 08", "Seringues 5cc - 05", "Épicrânienne - 08"). Ne confonds pas le texte manuscrit avec les mentions du cachet.
 4. EXCLUSIONS STRICTES : Ne confonds JAMAIS des instructions ou mentions comme 'Terminé', 'Terminer', 'Traitement', 'Date', 'Signature', 'Docteur', 'Ordonnance' avec un médicament. N'extrais UNIQUEMENT que de réels médicaments pharmaceutiques ou consommables médicaux.
 
+5. CONTEXTE SÉNÉGAL : les ordonnances viennent de Dakar et sa banlieue. Les noms de marque locaux sont fréquents (ex: Synclav, Azro, Coartem, Doliprane, Efferalgan, Clamoxyl, Flagyl, Spasfon, Ryocef). Écris le nom tel qu'il est commercialisé, en corrigeant l'écriture manuscrite vers le nom de médicament réel le plus plausible.
+6. CHIFFRES EN MARGE : les nombres isolés écrits dans la marge gauche ou droite (ex: '4030', '6035', '1100', '500x4') sont des PRIX notés par la pharmacie. Ce ne sont ni des médicaments ni des dosages : ignore-les.
+7. NE RIEN OUBLIER : les lignes sont souvent numérotées (1°, 2°, 3°, 4°...). Compte les lignes prescrites et renvoie exactement un élément par ligne, même si l'écriture est difficile : dans ce cas donne ta meilleure lecture avec une confidence basse (ex: 0.4) plutôt que d'omettre la ligne.
+
 Pour chaque produit ou matériel prescrit :
 - name : Nom du produit (ex: 'Ryocef', 'Maxidrol', 'Seringue 10 cc', 'Épicrânienne')
 - dosage : Dosage, volume ou spécification (ex: '1 g', '75 mg', '10 ml / 10 cc', '5 ml / 5 cc', 'Collyre', 'Quantité: 8')
@@ -127,6 +136,7 @@ Pour chaque produit ou matériel prescrit :
 
 RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
 {
+  "prescribedLineCount": 4,
   "medicines": [
     {
       "name": "Nom du produit ou dispositif",
@@ -164,6 +174,7 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
   const preferredModel = typeof import.meta !== 'undefined' ? import.meta.env?.VITE_GEMINI_MODEL : null;
   const models = [...new Set([
     preferredModel,
+    getLastWorkingModel(),
     'gemini-2.5-flash',
     'gemini-flash-latest',
     'gemini-3.5-flash',
@@ -248,7 +259,9 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
       });
 
       if (validItems.length > 0) {
-        return validItems.map((item, index) => ({
+        rememberWorkingModel(model);
+        const lineCount = Number.isInteger(parsed?.prescribedLineCount) ? parsed.prescribedLineCount : null;
+        const medicines = validItems.map((item, index) => ({
           id: `med_ai_${Date.now()}_${index}`,
           name: (item.name || 'Médicament non identifié').trim(),
           dosage: (item.dosage || 'Dosage standard').trim(),
@@ -257,6 +270,7 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
           confidence: typeof item.confidence === 'number' ? Math.min(Math.max(item.confidence, 0.1), 1.0) : 0.90,
           isVerified: typeof item.confidence === 'number' ? item.confidence >= 0.70 : true
         }));
+        return { medicines, lineCount };
       }
       // Réponse valide mais aucun produit reconnu
       lastError = new PrescriptionAnalysisError(
@@ -266,12 +280,10 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
       break;
     } catch (err) {
       if (err instanceof PrescriptionAnalysisError) throw err;
-      if (err?.name === 'AbortError') {
-        err = new Error(`${model} : délai de réponse dépassé`);
-      }
-      console.warn(`Tentative modèle ${model} échouée:`, err.message);
-      attemptErrors.push(err.message.startsWith(model) ? err.message : `${model} : ${err.message}`);
-      lastError = err;
+      const failure = err?.name === 'AbortError' ? new Error(`${model} : délai de réponse dépassé`) : err;
+      console.warn(`Tentative modèle ${model} échouée:`, failure.message);
+      attemptErrors.push(failure.message.startsWith(model) ? failure.message : `${model} : ${failure.message}`);
+      lastError = failure;
     } finally {
       clearTimeout(timer);
     }
@@ -282,6 +294,26 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
     `Le service de lecture d'ordonnance ne répond pas. Détail : ${attemptErrors.join(' | ') || lastError?.message || 'erreur inconnue'}`,
     'API_UNAVAILABLE'
   );
+}
+
+// Mémorise le dernier modèle Gemini qui a répondu : il est essayé en premier au scan suivant
+// (évite de perdre du temps sur des modèles indisponibles ou lents)
+const LAST_MODEL_KEY = 'pharmagarde_gemini_model';
+
+function getLastWorkingModel() {
+  try {
+    return localStorage.getItem(LAST_MODEL_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function rememberWorkingModel(model) {
+  try {
+    localStorage.setItem(LAST_MODEL_KEY, model);
+  } catch {
+    // stockage indisponible : on réessaiera la liste complète
+  }
 }
 
 /**

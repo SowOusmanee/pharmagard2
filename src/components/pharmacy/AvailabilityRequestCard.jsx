@@ -114,14 +114,13 @@ export default function AvailabilityRequestCard({
               }}
             >
               {/* Médicament et dosage */}
+              <div style={{ minWidth: 0, flex: 1, paddingRight: '10px', textAlign: 'left' }}>
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'baseline',
                   gap: '6px',
-                  minWidth: 0,
-                  flex: 1,
-                  paddingRight: '10px'
+                  minWidth: 0
                 }}
               >
                 <span
@@ -158,6 +157,18 @@ export default function AvailabilityRequestCard({
                       ≈ {med.matchedName}
                     </span>
                   )}
+              </div>
+              {/* Posologie lue + avertissement si la lecture est incertaine */}
+              {(med.instructions || med.needsCheck) && (
+                <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {med.needsCheck && (
+                    <span style={{ color: '#B45309', fontWeight: 700 }}>
+                      À vérifier sur la photo{med.instructions ? ' · ' : ''}
+                    </span>
+                  )}
+                  {med.instructions}
+                </div>
+              )}
               </div>
 
               {/* Bouton de validation vert et croix rouge */}
