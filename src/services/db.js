@@ -86,6 +86,7 @@ function saveRequests(requests) {
 const CLOUD_SYNC_TOPIC = 'https://ntfy.sh/pharmagarde_keurmassar_live';
 // Le relais local /api/sync/events n'existe qu'avec le serveur de développement (npm run dev)
 const USE_LOCAL_SYNC = Boolean(import.meta.env?.DEV);
+const CLOUD_EVENT_TYPES = new Set(['REQUEST_CREATED', 'REQUEST_RESPONDED', 'REQUEST_SERVED', 'STOCK_UPDATED']);
 
 // Cross-tab broadcast channel for real-time sync (same device)
 const broadcastChannel = typeof window !== 'undefined' && window.BroadcastChannel
@@ -128,6 +129,11 @@ class DatabaseService {
           }
           if (!event || !event.type || event.senderId === this.clientId) return;
 
+          // Messages regroupés (voir flushCloudQueue)
+          if (event.type === 'BATCH' && Array.isArray(event.events)) {
+            event.events.forEach((ev) => ev?.type && this.handleRemoteCloudEvent(ev));
+            return;
+          }
           this.handleRemoteCloudEvent(event);
         } catch {}
       };
@@ -294,44 +300,74 @@ class DatabaseService {
 
   broadcastToCloud(event) {
     if (typeof window === 'undefined' || typeof fetch === 'undefined') return;
+    // Seuls ces événements sont utiles à l'autre appareil (voir handleRemoteCloudEvent)
+    if (!CLOUD_EVENT_TYPES.has(event.type)) return;
     try {
       let cloudEvent = { ...event, senderId: this.clientId };
-      // Allège le payload si une photo base64 est attachée pour respecter la limite du réseau
-      if (
-        cloudEvent.request &&
-        cloudEvent.request.prescriptionPhoto &&
-        cloudEvent.request.prescriptionPhoto.startsWith('data:')
-      ) {
-        cloudEvent = {
-          ...cloudEvent,
-          request: {
-            ...cloudEvent.request,
-            prescriptionPhoto: null
-          }
-        };
+      // Allège le payload : la photo et la liste complète restent sur l'appareil d'origine
+      if (cloudEvent.request) {
+        const { prescriptionPhoto: _photo, medicinesList: _list, ...lightRequest } = cloudEvent.request;
+        cloudEvent = { ...cloudEvent, request: lightRequest };
       }
 
-      // Priorité 1 : Synchronisation locale directe via le serveur Vite (0 délai, réseau Wi-Fi local)
-      const postToCloud = () =>
-        fetch(CLOUD_SYNC_TOPIC, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(cloudEvent)
-        }).catch(() => {});
       if (!USE_LOCAL_SYNC) {
-        postToCloud();
+        this.queueCloudEvent(cloudEvent);
         return;
       }
+      // Développement : synchronisation locale directe via le serveur Vite (réseau Wi-Fi local)
       fetch('/api/sync/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cloudEvent)
       }).then((res) => {
-        // Sur un site déployé (Netlify) ce point d'accès n'existe pas : réponse 404, pas d'erreur réseau
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      }).catch(postToCloud);
+      }).catch(() => this.queueCloudEvent(cloudEvent));
     } catch {}
   }
+
+  // Le relais public ntfy.sh limite le nombre de messages (erreur 429) : les événements sont
+  // regroupés pendant 1 s puis envoyés en quelques messages de moins de 4 Ko (limite de ntfy)
+  queueCloudEvent(cloudEvent) {
+    this.cloudQueue = this.cloudQueue || [];
+    this.cloudQueue.push(cloudEvent);
+    if (!this.cloudFlushTimer) {
+      this.cloudFlushTimer = setTimeout(() => this.flushCloudQueue(), 1000);
+    }
+  }
+
+  async flushCloudQueue() {
+    this.cloudFlushTimer = null;
+    const events = this.cloudQueue || [];
+    this.cloudQueue = [];
+
+    const batches = [];
+    let current = [];
+    for (const ev of events) {
+      const candidate = [...current, ev];
+      if (current.length > 0 && JSON.stringify({ type: 'BATCH', events: candidate }).length > 3500) {
+        batches.push(current);
+        current = [ev];
+      } else {
+        current = candidate;
+      }
+    }
+    if (current.length > 0) batches.push(current);
+
+    for (const batch of batches) {
+      const body = JSON.stringify({ type: 'BATCH', senderId: this.clientId, events: batch });
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const res = await fetch(CLOUD_SYNC_TOPIC, { method: 'POST', body });
+          if (res.status !== 429) break;
+        } catch {
+          break;
+        }
+        // Trop de messages : on patiente avant de réessayer
+        await new Promise((resolve) => setTimeout(resolve, 6000 * (attempt + 1)));
+      }
+    }
+  }
+
 
   notifyLocalListeners(event) {
     this.listeners.forEach((callback) => {
