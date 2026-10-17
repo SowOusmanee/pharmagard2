@@ -529,6 +529,14 @@ function attachDatabaseMatch(med) {
 }
 
 /**
+ * Version allégée de la photo envoyée aux pharmacies (aperçu lisible, ~200 Ko au lieu de plusieurs Mo)
+ */
+export function compressPhotoForSharing(dataUrl) {
+  if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) return Promise.resolve(dataUrl);
+  return optimizeImageForOcr(dataUrl, 1400, 0.75);
+}
+
+/**
  * Optimizes oversized mobile photos for OCR transmission
  * (convertit aussi en JPEG quand le navigateur sait décoder l'image ; PDF transmis tel quel)
  */

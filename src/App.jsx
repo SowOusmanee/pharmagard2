@@ -30,7 +30,7 @@ import PharmaciesListScreen from './components/patient/PharmaciesListScreen';
 import CreateAccountScreen from './components/patient/CreateAccountScreen';
 import PharmacyDetailModal from './components/patient/PharmacyDetailModal';
 import PatientAuthModal from './components/patient/PatientAuthModal';
-import { analyzePrescription } from './services/analyzer';
+import { analyzePrescription, compressPhotoForSharing } from './services/analyzer';
 
 // Pharmacy Components
 import PharmacyHomeScreen from './components/pharmacy/PharmacyHomeScreen';
@@ -306,11 +306,16 @@ export default function App() {
         setTimeout(() => setToast(null), 10000);
       }
 
+      // Photo allégée pour les pharmacies (la photo originale peut dépasser la capacité du navigateur)
+      const sharedPhoto = photoPayload?.dataUrl
+        ? await compressPhotoForSharing(photoPayload.dataUrl)
+        : photoPayload?.preset?.imageUrl;
+
       // Envoi de la demande aux pharmacies par rayon progressif
       progressiveSearchService.startSearch({
         medicines: result.medicines || [],
         prescriptionId: resolvedPrescriptionId,
-        prescriptionPhoto: photoPayload?.dataUrl || photoPayload?.preset?.imageUrl,
+        prescriptionPhoto: sharedPhoto,
         userLocation: userLocationRef.current
       });
 

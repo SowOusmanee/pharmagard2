@@ -50,6 +50,38 @@ const safeStorage = {
   }
 };
 
+// Sauvegarde des demandes en tenant compte de la limite du navigateur (~5 Mo).
+// Les photos d'ordonnance sont lourdes : si la sauvegarde échoue, on retire d'abord les photos
+// des anciennes ordonnances, puis toutes les photos, pour que la demande arrive quand même.
+const MAX_STORED_REQUESTS = 100;
+
+function saveRequests(requests) {
+  const tryWrite = (list) => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(list));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  if (typeof localStorage === 'undefined') {
+    safeStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(requests));
+    return;
+  }
+  let list = requests.slice(0, MAX_STORED_REQUESTS);
+  if (tryWrite(list)) return;
+
+  const latestPrescription = list[0]?.prescriptionId;
+  list = list.map((r) => (r.prescriptionId === latestPrescription ? r : { ...r, prescriptionPhoto: null }));
+  if (tryWrite(list)) return;
+
+  list = list.map((r) => ({ ...r, prescriptionPhoto: null }));
+  if (tryWrite(list)) return;
+
+  console.warn('Stockage plein : demandes conservées en mémoire uniquement');
+  safeStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(list));
+}
+
 // Cloud pub/sub topic for cross-device real-time sync (between 2 phones)
 const CLOUD_SYNC_TOPIC = 'https://ntfy.sh/pharmagarde_keurmassar_live';
 
@@ -123,14 +155,14 @@ class DatabaseService {
       const exists = requests.some((r) => r.requestId === event.request.requestId);
       if (!exists) {
         requests.unshift(event.request);
-        safeStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(requests));
+        saveRequests(requests);
       }
     } else if (event.type === 'REQUEST_RESPONDED' && event.request) {
       const requests = this.getRequests();
       const index = requests.findIndex((r) => r.requestId === event.request.requestId);
       if (index !== -1) {
         requests[index] = { ...requests[index], ...event.request, status: event.status };
-        safeStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(requests));
+        saveRequests(requests);
       }
       if (event.request.pharmacyId && event.request.medicineId) {
         this.updateStockAvailability(event.request.pharmacyId, event.request.medicineId, event.status);
@@ -142,7 +174,7 @@ class DatabaseService {
         requests[index].status = 'SERVED';
         requests[index].servedAt = Date.now();
         requests[index].isReserved = false;
-        safeStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(requests));
+        saveRequests(requests);
       }
     } else if (event.type === 'STOCK_UPDATED') {
       const stock = this.getStock();
@@ -229,7 +261,7 @@ class DatabaseService {
           respondedAt: null
         }
       ];
-      safeStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(initialRequests));
+      saveRequests(initialRequests);
     }
     if (!safeStorage.getItem(STORAGE_KEYS.PRESCRIPTIONS)) {
       safeStorage.setItem(STORAGE_KEYS.PRESCRIPTIONS, JSON.stringify([]));
@@ -516,7 +548,7 @@ class DatabaseService {
     });
 
     if (hasChanges) {
-      safeStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(uniqueList));
+      saveRequests(uniqueList);
     }
 
     if (pharmacyId) {
@@ -582,7 +614,7 @@ class DatabaseService {
     };
 
     requests.unshift(newRequest);
-    safeStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(requests));
+    saveRequests(requests);
 
     // Register simulated push notification for the pharmacy
     this.addNotification({
@@ -617,7 +649,7 @@ class DatabaseService {
     }
 
     requests[index] = req;
-    safeStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(requests));
+    saveRequests(requests);
 
     // Auto-update pharmacy stock table so future queries know availability
     if (req.medicineId && req.pharmacyId) {
@@ -640,7 +672,7 @@ class DatabaseService {
     req.isReserved = false;
 
     requests[index] = req;
-    safeStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(requests));
+    saveRequests(requests);
 
     this.notify({ type: 'REQUEST_SERVED', request: req, requestId });
     return req;
@@ -660,7 +692,7 @@ class DatabaseService {
     });
 
     if (updated) {
-      safeStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(requests));
+      saveRequests(requests);
       this.notify({ type: 'READING_VERIFIED', prescriptionId, pharmacyId });
     }
   }
