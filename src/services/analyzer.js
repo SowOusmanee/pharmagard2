@@ -129,11 +129,12 @@ DIRECTIVES ABSOLUES DE SÉCURITÉ ET D'EXTRACTION MÉDICALE :
 3. ATTENTION AUX TAMPONS / CACHETS : Lis attentivement les lignes manuscrites même si elles touchent ou sont adjacentes à un tampon médical ou cachet rond (ex: "Seringues 10cc - 08", "Seringues 5cc - 05", "Épicrânienne - 08"). Ne confonds pas le texte manuscrit avec les mentions du cachet.
 4. EXCLUSIONS STRICTES : Ne confonds JAMAIS des instructions ou mentions comme 'Terminé', 'Terminer', 'Traitement', 'Date', 'Signature', 'Docteur', 'Ordonnance' avec un médicament. N'extrais UNIQUEMENT que de réels médicaments pharmaceutiques ou consommables médicaux.
 
-5. CONTEXTE SÉNÉGAL : les ordonnances viennent de Dakar et sa banlieue. Les noms de marque locaux sont fréquents (ex: Synclav, Azro, Coartem, Doliprane, Efferalgan, Clamoxyl, Flagyl, Spasfon, Ryocef). Écris le nom tel qu'il est commercialisé, en corrigeant l'écriture manuscrite vers le nom de médicament réel le plus plausible.
+5. CONTEXTE SÉNÉGAL : les ordonnances viennent de Dakar et sa banlieue ; les noms de marque locaux (Afrique de l'Ouest, Maroc, Inde) sont fréquents. Déchiffre chaque lettre manuscrite avec soin AVANT de choisir un nom : ne remplace pas un nom par une marque plus connue qui commence par d'autres lettres (ex: une écriture « Neuclav » doit rester Neuclav, pas devenir Synclav).
 6. CHIFFRES EN MARGE : les nombres isolés écrits dans la marge gauche ou droite (ex: '4030', '6035', '1100', '500x4') sont des PRIX notés par la pharmacie. Ce ne sont ni des médicaments ni des dosages : ignore-les.
 7. NE RIEN OUBLIER : les lignes sont souvent numérotées (1°, 2°, 3°, 4°...). Compte les lignes prescrites et renvoie exactement un élément par ligne, même si l'écriture est difficile : dans ce cas donne ta meilleure lecture avec une confidence basse (ex: 0.4) plutôt que d'omettre la ligne.
 
 Pour chaque produit ou matériel prescrit :
+- raw : transcription lettre par lettre de la ligne manuscrite, telle qu'elle est écrite
 - name : Nom du produit (ex: 'Ryocef', 'Maxidrol', 'Seringue 10 cc', 'Épicrânienne')
 - dosage : Dosage, volume ou spécification (ex: '1 g', '75 mg', '10 ml / 10 cc', '5 ml / 5 cc', 'Collyre', 'Quantité: 8')
 - form : Forme ou type (ex: 'Injectable', 'Collyre', 'Dispositif médical / Consommable', 'Comprimé')
@@ -145,6 +146,7 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
   "prescribedLineCount": 4,
   "medicines": [
     {
+      "raw": "Transcription brute de la ligne",
       "name": "Nom du produit ou dispositif",
       "dosage": "Dosage ou Volume/Taille",
       "form": "Forme ou Consommable",
@@ -171,36 +173,40 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
     ],
     generationConfig: {
       temperature: 0.1,
-      responseMimeType: "application/json"
+      responseMimeType: "application/json",
+      // Haute résolution : indispensable pour l'écriture manuscrite
+      mediaResolution: 'MEDIA_RESOLUTION_HIGH'
     }
   };
 
   // Modèles disponibles dans l'ordre de priorité (vision OCR haute précision)
   // VITE_GEMINI_MODEL permet de forcer un modèle précis sans toucher au code
   const preferredModel = typeof import.meta !== 'undefined' ? import.meta.env?.VITE_GEMINI_MODEL : null;
+  // Les meilleurs modèles réellement disponibles pour la clé (Pro d'abord), puis une liste de secours
+  const discovered = await getBestVisionModels(apiKey);
   const models = [...new Set([
     preferredModel,
-    getLastWorkingModel(),
+    ...discovered,
+    'gemini-2.5-pro',
     'gemini-2.5-flash',
-    'gemini-flash-latest',
-    'gemini-3.5-flash',
-    'gemini-3.7-flash',
-    'gemini-3.1-flash-lite',
-    'gemini-flash-lite-latest'
+    'gemini-flash-latest'
   ].filter(Boolean))];
   let lastError = null;
   const attemptErrors = []; // raison de l'échec de chaque modèle, affichée au patient pour le diagnostic
 
   // Limites de temps : sans elles, un appel Gemini bloqué laisse « Scan en cours… » indéfiniment
+  // Les modèles Pro réfléchissent plus longtemps : on leur laisse plus de temps
   const PER_MODEL_TIMEOUT_MS = 45000;
-  const TOTAL_TIMEOUT_MS = 100000;
+  const PRO_MODEL_TIMEOUT_MS = 90000;
+  const TOTAL_TIMEOUT_MS = 150000;
   const deadline = Date.now() + TOTAL_TIMEOUT_MS;
 
   for (const model of models) {
     const remainingMs = deadline - Date.now();
     if (remainingMs <= 0) break;
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), Math.min(PER_MODEL_TIMEOUT_MS, remainingMs));
+    const modelTimeout = /pro/i.test(model) ? PRO_MODEL_TIMEOUT_MS : PER_MODEL_TIMEOUT_MS;
+    const timer = setTimeout(() => controller.abort(), Math.min(modelTimeout, remainingMs));
     try {
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -215,6 +221,11 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const apiMessage = errorData?.error?.message || `HTTP ${response.status}`;
+        // Option haute résolution refusée par ce modèle : on la retire et on réessaie ce modèle
+        if (response.status === 400 && /media.?resolution/i.test(apiMessage) && requestBody.generationConfig.mediaResolution) {
+          delete requestBody.generationConfig.mediaResolution;
+          models.splice(models.indexOf(model) + 1, 0, model);
+        }
         // Clé invalide / refusée : inutile d'essayer les autres modèles
         if (response.status === 400 && /api key/i.test(apiMessage) || response.status === 401 || response.status === 403) {
           throw new PrescriptionAnalysisError(`Clé Gemini refusée : ${apiMessage}`, 'BAD_API_KEY');
@@ -223,7 +234,11 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
       }
 
       const data = await response.json();
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      // Les modèles récents peuvent renvoyer plusieurs morceaux (dont des « pensées ») : on garde le texte final
+      const rawText = (data?.candidates?.[0]?.content?.parts || [])
+        .filter((part) => !part.thought)
+        .map((part) => part.text || '')
+        .join('');
       if (!rawText) throw new Error('Réponse vide du moteur de vision');
 
       // Nettoyage des balises markdown éventuelles (```json ... ```)
@@ -265,7 +280,7 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
       });
 
       if (validItems.length > 0) {
-        rememberWorkingModel(model);
+        console.info(`Ordonnance lue par ${model}`);
         const lineCount = Number.isInteger(parsed?.prescribedLineCount) ? parsed.prescribedLineCount : null;
         const medicines = validItems.map((item, index) => ({
           id: `med_ai_${Date.now()}_${index}`,
@@ -273,6 +288,7 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
           dosage: (item.dosage || 'Dosage standard').trim(),
           form: item.form || '',
           instructions: item.instructions || '',
+          raw: typeof item.raw === 'string' ? item.raw.trim() : '',
           confidence: typeof item.confidence === 'number' ? Math.min(Math.max(item.confidence, 0.1), 1.0) : 0.90,
           isVerified: typeof item.confidence === 'number' ? item.confidence >= 0.70 : true
         }));
@@ -385,7 +401,7 @@ Si rien de fiable n'est trouvé : {"found": false, "alternatives": [], "confiden
 }
 
 async function verifyMedicinesOnline(medicines, apiKey) {
-  const model = getLastWorkingModel() || 'gemini-2.5-flash';
+  const model = await getFastModel(apiKey);
   const cache = readWebCache();
   const targets = medicines.filter(needsOnlineCheck).slice(0, MAX_WEB_LOOKUPS);
 
@@ -429,24 +445,63 @@ async function verifyMedicinesOnline(medicines, apiKey) {
   });
 }
 
-// Mémorise le dernier modèle Gemini qui a répondu : il est essayé en premier au scan suivant
-// (évite de perdre du temps sur des modèles indisponibles ou lents)
-const LAST_MODEL_KEY = 'pharmagarde_gemini_model';
+// ---------------------------------------------------------------------------
+// Choix automatique du meilleur modèle Gemini disponible pour la clé
+// (les noms de modèles changent souvent : on interroge l'API au lieu de les figer dans le code)
+// ---------------------------------------------------------------------------
+const MODELS_CACHE_KEY = 'pharmagarde_gemini_models';
+const MODELS_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
+const EXCLUDED_MODEL_WORDS = /(tts|image|embedding|live|audio|native|computer|robotics|nano|gemma|aqa|learnlm|veo|imagen|lite)/i;
 
-function getLastWorkingModel() {
+function rankModel(name) {
+  const tier = /pro/i.test(name) ? 2 : /flash/i.test(name) ? 1 : 0;
+  const version = parseFloat((name.match(/gemini-(\d+(?:\.\d+)?)/) || [])[1] || '0');
+  const stable = /preview|exp/i.test(name) ? 0 : 1;
+  return tier * 1000 + version * 10 + stable;
+}
+
+async function listAvailableModels(apiKey) {
   try {
-    return localStorage.getItem(LAST_MODEL_KEY);
+    const cached = JSON.parse(localStorage.getItem(MODELS_CACHE_KEY) || 'null');
+    if (cached && Date.now() - cached.at < MODELS_CACHE_TTL_MS && Array.isArray(cached.models)) return cached.models;
   } catch {
-    return null;
+    // cache illisible : on interroge l'API
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=${apiKey}`, { signal: controller.signal });
+    if (!response.ok) return [];
+    const data = await response.json();
+    const models = (data.models || [])
+      .filter((m) => (m.supportedGenerationMethods || []).includes('generateContent'))
+      .map((m) => (m.name || '').replace(/^models\//, ''))
+      .filter((name) => name.startsWith('gemini-') && !EXCLUDED_MODEL_WORDS.test(name));
+    try {
+      localStorage.setItem(MODELS_CACHE_KEY, JSON.stringify({ at: Date.now(), models }));
+    } catch {
+      // stockage indisponible
+    }
+    return models;
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timer);
   }
 }
 
-function rememberWorkingModel(model) {
-  try {
-    localStorage.setItem(LAST_MODEL_KEY, model);
-  } catch {
-    // stockage indisponible : on réessaiera la liste complète
-  }
+// Lecture d'ordonnance : les 2 meilleurs Pro puis le meilleur Flash
+async function getBestVisionModels(apiKey) {
+  const ranked = (await listAvailableModels(apiKey)).sort((a, b) => rankModel(b) - rankModel(a));
+  const pros = ranked.filter((m) => /pro/i.test(m)).slice(0, 2);
+  const flashes = ranked.filter((m) => /flash/i.test(m)).slice(0, 1);
+  return [...pros, ...flashes];
+}
+
+// Recherche web : un modèle Flash suffit et répond plus vite
+async function getFastModel(apiKey) {
+  const ranked = (await listAvailableModels(apiKey)).sort((a, b) => rankModel(b) - rankModel(a));
+  return ranked.find((m) => /flash/i.test(m)) || 'gemini-2.5-flash';
 }
 
 /**
@@ -477,7 +532,7 @@ function attachDatabaseMatch(med) {
  * Optimizes oversized mobile photos for OCR transmission
  * (convertit aussi en JPEG quand le navigateur sait décoder l'image ; PDF transmis tel quel)
  */
-function optimizeImageForOcr(dataUrl, maxDimension = 1800, quality = 0.90) {
+function optimizeImageForOcr(dataUrl, maxDimension = 2400, quality = 0.92) {
   return new Promise((resolve) => {
     if (typeof window === 'undefined' || !window.Image) return resolve(dataUrl);
     if (/^data:application\/pdf/i.test(dataUrl)) return resolve(dataUrl);

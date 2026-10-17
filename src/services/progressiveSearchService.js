@@ -184,6 +184,7 @@ class ProgressiveSearchEngine {
             dosage: med.dosage || '',
             matchedName: med.dbMatch?.name || null,
             instructions: med.instructions || '',
+            rawText: med.raw || '',
             needsCheck: med.isVerified === false,
             dci: med.dci || '',
             alternatives: med.alternatives || [],

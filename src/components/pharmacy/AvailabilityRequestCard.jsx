@@ -159,6 +159,12 @@ export default function AvailabilityRequestCard({
                   )}
               </div>
               {/* Posologie lue + avertissement si la lecture est incertaine */}
+              {/* Ce qui est réellement écrit sur l'ordonnance (transcription lettre par lettre) */}
+              {med.rawText && (
+                <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px', fontStyle: 'italic', lineHeight: 1.35 }}>
+                  Écrit : « {med.rawText} »
+                </div>
+              )}
               {/* Principe actif et autres noms possibles (vérification en ligne) */}
               {(med.dci || med.alternatives?.length > 0) && (
                 <div style={{ fontSize: '12px', color: '#0F766E', marginTop: '2px', lineHeight: 1.35 }}>
