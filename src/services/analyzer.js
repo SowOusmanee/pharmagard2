@@ -182,23 +182,20 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
   // Modèles disponibles dans l'ordre de priorité (vision OCR haute précision)
   // VITE_GEMINI_MODEL permet de forcer un modèle précis sans toucher au code
   const preferredModel = typeof import.meta !== 'undefined' ? import.meta.env?.VITE_GEMINI_MODEL : null;
-  // Les meilleurs modèles réellement disponibles pour la clé (Pro d'abord), puis une liste de secours
+  // Uniquement des modèles gratuits (Flash) : les meilleurs disponibles pour la clé, puis une liste de secours
   const discovered = await getBestVisionModels(apiKey);
   const models = [...new Set([
     preferredModel,
     ...discovered,
-    'gemini-2.5-pro',
-    'gemini-2.5-flash',
-    'gemini-flash-latest'
-  ].filter(Boolean))];
+    'gemini-flash-latest',
+    'gemini-2.5-flash'
+  ].filter(Boolean))].filter((m) => !/pro/i.test(m));
   let lastError = null;
   const attemptErrors = []; // raison de l'échec de chaque modèle, affichée au patient pour le diagnostic
 
   // Limites de temps : sans elles, un appel Gemini bloqué laisse « Scan en cours… » indéfiniment
-  // Les modèles Pro réfléchissent plus longtemps : on leur laisse plus de temps
   const PER_MODEL_TIMEOUT_MS = 45000;
-  const PRO_MODEL_TIMEOUT_MS = 90000;
-  const TOTAL_TIMEOUT_MS = 150000;
+  const TOTAL_TIMEOUT_MS = 100000;
   const deadline = Date.now() + TOTAL_TIMEOUT_MS;
 
   for (const model of models) {
@@ -206,8 +203,7 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
     const remainingMs = deadline - Date.now();
     if (remainingMs <= 0) break;
     const controller = new AbortController();
-    const modelTimeout = /pro/i.test(model) ? PRO_MODEL_TIMEOUT_MS : PER_MODEL_TIMEOUT_MS;
-    const timer = setTimeout(() => controller.abort(), Math.min(modelTimeout, remainingMs));
+    const timer = setTimeout(() => controller.abort(), Math.min(PER_MODEL_TIMEOUT_MS, remainingMs));
     try {
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -528,12 +524,10 @@ function setModelCooldown(model, apiMessage = '') {
   }
 }
 
-// Lecture d'ordonnance : les 2 meilleurs Pro puis le meilleur Flash
+// Lecture d'ordonnance : les 3 meilleurs modèles Flash (gratuits), jamais de modèle Pro (payant)
 async function getBestVisionModels(apiKey) {
   const ranked = (await listAvailableModels(apiKey)).sort((a, b) => rankModel(b) - rankModel(a));
-  const pros = ranked.filter((m) => /pro/i.test(m)).slice(0, 2);
-  const flashes = ranked.filter((m) => /flash/i.test(m)).slice(0, 1);
-  return [...pros, ...flashes];
+  return ranked.filter((m) => /flash/i.test(m)).slice(0, 3);
 }
 
 // Recherche web : un modèle Flash suffit et répond plus vite
