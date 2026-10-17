@@ -314,7 +314,7 @@ export default function App() {
         title: "Ordonnance non lue",
         message: err?.message || "Impossible de lire l'ordonnance. Réessayez avec une photo plus nette."
       });
-      setTimeout(() => setToast(null), 8000);
+      setTimeout(() => setToast(null), 30000);
     }
   };
 

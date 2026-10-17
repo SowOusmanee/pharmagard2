@@ -172,6 +172,7 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
     'gemini-flash-lite-latest'
   ].filter(Boolean))];
   let lastError = null;
+  const attemptErrors = []; // raison de l'échec de chaque modèle, affichée au patient pour le diagnostic
 
   // Limites de temps : sans elles, un appel Gemini bloqué laisse « Scan en cours… » indéfiniment
   const PER_MODEL_TIMEOUT_MS = 45000;
@@ -269,6 +270,7 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
         err = new Error(`${model} : délai de réponse dépassé`);
       }
       console.warn(`Tentative modèle ${model} échouée:`, err.message);
+      attemptErrors.push(err.message.startsWith(model) ? err.message : `${model} : ${err.message}`);
       lastError = err;
     } finally {
       clearTimeout(timer);
@@ -277,7 +279,7 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
 
   if (lastError instanceof PrescriptionAnalysisError) throw lastError;
   throw new PrescriptionAnalysisError(
-    `Le service de lecture d'ordonnance ne répond pas (${lastError?.message || 'erreur inconnue'}). Réessayez dans un instant.`,
+    `Le service de lecture d'ordonnance ne répond pas. Détail : ${attemptErrors.join(' | ') || lastError?.message || 'erreur inconnue'}`,
     'API_UNAVAILABLE'
   );
 }
