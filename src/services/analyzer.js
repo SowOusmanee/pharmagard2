@@ -2,7 +2,7 @@
 // Anonymized extraction of medications with strict patient privacy protection
 
 import { storageService } from './storageService.js';
-import { findBestMedicineMatch } from './medicineSearchService.js';
+import { findBestMedicineMatch, normalizeMedicineQuery } from './medicineSearchService.js';
 
 // Formats acceptés directement par Gemini (inline_data)
 const GEMINI_INLINE_MIME = /^data:(image\/(jpeg|jpg|png|webp|heic|heif)|application\/pdf);base64,/i;
@@ -77,6 +77,12 @@ export async function analyzePrescription(imagePayload, options = {}) {
     medicines = extraction.medicines.map(attachDatabaseMatch);
     // Lignes de l'ordonnance que Gemini a comptées mais pas réussi à lire
     missingLines = extraction.lineCount ? Math.max(extraction.lineCount - medicines.length, 0) : 0;
+
+    // Médicaments absents de la base ou lus avec doute : vérification par recherche Google
+    if (medicines.some(needsOnlineCheck)) {
+      if (onProgress) onProgress({ stage: { id: 'verifying', label: 'Vérification en ligne des médicaments' }, percent: 85 });
+      medicines = await verifyMedicinesOnline(medicines, apiKey);
+    }
   }
 
   let hasLowConfidence = false;
@@ -294,6 +300,133 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
     `Le service de lecture d'ordonnance ne répond pas. Détail : ${attemptErrors.join(' | ') || lastError?.message || 'erreur inconnue'}`,
     'API_UNAVAILABLE'
   );
+}
+
+// ---------------------------------------------------------------------------
+// Vérification en ligne (Gemini + recherche Google) des produits que la base ne connaît pas
+// ---------------------------------------------------------------------------
+const WEB_CACHE_KEY = 'pharmagarde_web_medicines';
+const WEB_LOOKUP_TIMEOUT_MS = 25000;
+const MAX_WEB_LOOKUPS = 6;
+
+function needsOnlineCheck(med) {
+  return !med.dbMatch || (typeof med.confidence === 'number' && med.confidence < 0.8);
+}
+
+function webCacheKey(med) {
+  return normalizeMedicineQuery(`${med.name} ${med.dosage || ''}`);
+}
+
+function readWebCache() {
+  try {
+    return JSON.parse(localStorage.getItem(WEB_CACHE_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function writeWebCache(cache) {
+  try {
+    const keys = Object.keys(cache);
+    // On garde les 200 dernières recherches
+    for (const k of keys.slice(0, Math.max(keys.length - 200, 0))) delete cache[k];
+    localStorage.setItem(WEB_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // stockage indisponible : pas de cache
+  }
+}
+
+async function lookupMedicineOnline(med, apiKey, model) {
+  const prompt = `Un médicament a été lu sur une ordonnance MANUSCRITE au Sénégal (Dakar). L'écriture peut avoir été mal lue.
+Lecture : « ${med.name} »${med.dosage ? `, dosage « ${med.dosage} »` : ''}${med.instructions ? `, posologie « ${med.instructions} »` : ''}.
+
+Fais une recherche Google pour :
+1. Vérifier si un médicament portant ce nom est commercialisé (en priorité au Sénégal et en Afrique de l'Ouest, sinon Maroc, France).
+2. Lister les autres noms de médicaments RÉELS qui s'écrivent de façon proche et sont compatibles avec ce dosage (confusions d'écriture manuscrite possibles).
+
+Réponds UNIQUEMENT avec un objet JSON, sans texte autour :
+{"found": true, "name": "nom commercial exact", "dci": "principe(s) actif(s)", "dosage": "dosage", "form": "forme", "alternatives": ["autre nom proche"], "confidence": 0.8}
+Si rien de fiable n'est trouvé : {"found": false, "alternatives": [], "confidence": 0}`;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), WEB_LOOKUP_TIMEOUT_MS);
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          tools: [{ google_search: {} }],
+          generationConfig: { temperature: 0.1 }
+        }),
+        signal: controller.signal
+      }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    const text = (data?.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('');
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+    const result = JSON.parse(jsonMatch[0]);
+    return {
+      found: Boolean(result.found && result.name),
+      name: (result.name || '').trim(),
+      dci: (result.dci || '').trim(),
+      dosage: (result.dosage || '').trim(),
+      form: (result.form || '').trim(),
+      alternatives: Array.isArray(result.alternatives) ? result.alternatives.filter((a) => typeof a === 'string' && a.trim()).slice(0, 3) : [],
+      confidence: typeof result.confidence === 'number' ? result.confidence : 0.5
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function verifyMedicinesOnline(medicines, apiKey) {
+  const model = getLastWorkingModel() || 'gemini-2.5-flash';
+  const cache = readWebCache();
+  const targets = medicines.filter(needsOnlineCheck).slice(0, MAX_WEB_LOOKUPS);
+
+  const lookups = await Promise.all(
+    targets.map(async (med) => {
+      const key = webCacheKey(med);
+      if (cache[key]) return [med.id, cache[key]];
+      try {
+        const result = await lookupMedicineOnline(med, apiKey, model);
+        if (result) cache[key] = result;
+        return [med.id, result];
+      } catch (err) {
+        console.warn(`Vérification en ligne de ${med.name} échouée:`, err.message);
+        return [med.id, null];
+      }
+    })
+  );
+  writeWebCache(cache);
+
+  const byId = new Map(lookups);
+  return medicines.map((med) => {
+    const web = byId.get(med.id);
+    if (!web) return med;
+    const readName = normalizeMedicineQuery(med.name);
+    const alternatives = web.alternatives.filter((a) => {
+      const n = normalizeMedicineQuery(a);
+      return n && n !== readName && n !== normalizeMedicineQuery(web.name);
+    });
+    return {
+      ...med,
+      // La base locale reste prioritaire ; sinon on retient le résultat web
+      dbMatch: med.dbMatch || (web.found
+        ? { name: web.name, dosage: web.dosage, form: web.form, dci: web.dci, fullTitle: `${web.name} ${web.dosage}`.trim(), score: web.confidence, source: 'web' }
+        : null),
+      dci: web.dci || med.dbMatch?.dci || '',
+      alternatives,
+      webVerified: web.found,
+      // Produit confirmé en ligne sans autre nom possible : plus besoin de vérifier
+      isVerified: med.isVerified || (web.found && web.confidence >= 0.8 && alternatives.length === 0 && normalizeMedicineQuery(web.name) === readName)
+    };
+  });
 }
 
 // Mémorise le dernier modèle Gemini qui a répondu : il est essayé en premier au scan suivant

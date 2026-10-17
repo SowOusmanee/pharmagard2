@@ -33,3 +33,4 @@ GANTS STERILES, dispositif médical
 SERUM GLUCOSE 5 POUR CENT, solution pour perfusion
 SERUM SALE 0,9 POUR CENT, solution pour perfusion
 RINGER LACTATE, solution pour perfusion
+NEUCLAV 1 g, comprimé

@@ -120747,5 +120747,13 @@ class MedicinesDatabase {
       form: 'solution pour perfusion',
       fullTitle: 'Ringer Lactate Dosage standard',
     ),
+    MedicineItem(
+      id: 'med_15092',
+      name: 'Neuclav',
+      normalized: 'neuclav',
+      dosage: '1 g',
+      form: 'comprimé',
+      fullTitle: 'Neuclav 1 g',
+    ),
   ];
 }

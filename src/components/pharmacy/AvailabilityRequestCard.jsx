@@ -159,6 +159,17 @@ export default function AvailabilityRequestCard({
                   )}
               </div>
               {/* Posologie lue + avertissement si la lecture est incertaine */}
+              {/* Principe actif et autres noms possibles (vérification en ligne) */}
+              {(med.dci || med.alternatives?.length > 0) && (
+                <div style={{ fontSize: '12px', color: '#0F766E', marginTop: '2px', lineHeight: 1.35 }}>
+                  {med.dci}
+                  {med.alternatives?.length > 0 && (
+                    <span style={{ color: '#B45309', fontWeight: 700 }}>
+                      {med.dci ? ' · ' : ''}ou : {med.alternatives.join(', ')} ?
+                    </span>
+                  )}
+                </div>
+              )}
               {(med.instructions || med.needsCheck) && (
                 <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {med.needsCheck && (

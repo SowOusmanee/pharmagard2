@@ -185,6 +185,8 @@ class ProgressiveSearchEngine {
             matchedName: med.dbMatch?.name || null,
             instructions: med.instructions || '',
             needsCheck: med.isVerified === false,
+            dci: med.dci || '',
+            alternatives: med.alternatives || [],
             prescriptionId: this.currentSearch.prescriptionId,
             prescriptionPhoto: this.currentSearch.prescriptionPhoto,
             medicinesList: this.currentSearch.medicines,

@@ -282,7 +282,10 @@ export default function App() {
     try {
       // Une vraie photo est toujours lue par Gemini ; l'exemple de démo n'est utilisé que sans photo
       const result = await analyzePrescription(photoPayload?.dataUrl || null, {
-        presetMedicines: photoPayload?.dataUrl ? null : photoPayload?.preset?.medicines
+        presetMedicines: photoPayload?.dataUrl ? null : photoPayload?.preset?.medicines,
+        onProgress: ({ stage }) => {
+          if (stage?.id === 'verifying') setScanStatusText('Vérification en ligne...');
+        }
       });
 
       const resolvedPrescriptionId = result.prescriptionId || `presc_${Date.now()}`;
