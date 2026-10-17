@@ -202,6 +202,7 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
   const deadline = Date.now() + TOTAL_TIMEOUT_MS;
 
   for (const model of models) {
+    if (isModelOnCooldown(model)) continue;
     const remainingMs = deadline - Date.now();
     if (remainingMs <= 0) break;
     const controller = new AbortController();
@@ -226,6 +227,8 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
           delete requestBody.generationConfig.mediaResolution;
           models.splice(models.indexOf(model) + 1, 0, model);
         }
+        // Quota épuisé (429) : on n'essaie plus ce modèle pendant un moment
+        if (response.status === 429) setModelCooldown(model, apiMessage);
         // Clé invalide / refusée : inutile d'essayer les autres modèles
         if (response.status === 400 && /api key/i.test(apiMessage) || response.status === 401 || response.status === 403) {
           throw new PrescriptionAnalysisError(`Clé Gemini refusée : ${apiMessage}`, 'BAD_API_KEY');
@@ -324,6 +327,7 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
 const WEB_CACHE_KEY = 'pharmagarde_web_medicines';
 const WEB_LOOKUP_TIMEOUT_MS = 25000;
 const MAX_WEB_LOOKUPS = 6;
+const WEB_SEARCH_COOLDOWN = 'google_search';
 
 function needsOnlineCheck(med) {
   return !med.dbMatch || (typeof med.confidence === 'number' && med.confidence < 0.8);
@@ -380,6 +384,10 @@ Si rien de fiable n'est trouvé : {"found": false, "alternatives": [], "confiden
         signal: controller.signal
       }
     );
+    if (response.status === 429) {
+      const errorData = await response.json().catch(() => ({}));
+      setModelCooldown(WEB_SEARCH_COOLDOWN, errorData?.error?.message);
+    }
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     const text = (data?.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('');
@@ -401,6 +409,8 @@ Si rien de fiable n'est trouvé : {"found": false, "alternatives": [], "confiden
 }
 
 async function verifyMedicinesOnline(medicines, apiKey) {
+  // Quota de recherche Google épuisé : on n'attend pas, le scan continue sans vérification
+  if (isModelOnCooldown(WEB_SEARCH_COOLDOWN)) return medicines;
   const model = await getFastModel(apiKey);
   const cache = readWebCache();
   const targets = medicines.filter(needsOnlineCheck).slice(0, MAX_WEB_LOOKUPS);
@@ -487,6 +497,34 @@ async function listAvailableModels(apiKey) {
     return [];
   } finally {
     clearTimeout(timer);
+  }
+}
+
+// Modèles au quota épuisé : ignorés jusqu'à l'heure indiquée par Google (« retry in 23h… »), 1 h par défaut
+const COOLDOWN_KEY = 'pharmagarde_gemini_cooldown';
+
+function readCooldowns() {
+  try {
+    return JSON.parse(localStorage.getItem(COOLDOWN_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function isModelOnCooldown(model) {
+  return (readCooldowns()[model] || 0) > Date.now();
+}
+
+function setModelCooldown(model, apiMessage = '') {
+  const h = /(\d+)h/.exec(apiMessage);
+  const m = /(\d+)m/.exec(apiMessage);
+  const retryMs = h || m ? ((h ? +h[1] : 0) * 60 + (m ? +m[1] : 0)) * 60000 : 60 * 60000;
+  const cooldowns = readCooldowns();
+  cooldowns[model] = Date.now() + Math.min(Math.max(retryMs, 60000), 24 * 3600000);
+  try {
+    localStorage.setItem(COOLDOWN_KEY, JSON.stringify(cooldowns));
+  } catch {
+    // stockage indisponible
   }
 }
 

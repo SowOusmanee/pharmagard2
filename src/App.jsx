@@ -85,7 +85,8 @@ export default function App() {
         if (!isMounted) return;
         setUserLocation(loc);
         setAllPharmaciesList(phs);
-        if (activePh) {
+        // Un pharmacien connecté garde son officine ; sinon on prend la plus proche
+        if (activePh && authService.getSession()?.user?.role !== 'pharmacist') {
           setActivePharmacyId(activePh.id);
         }
       })

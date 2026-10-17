@@ -116,7 +116,9 @@ class ProgressiveSearchEngine {
         );
         return {
           ...p,
-          calculatedDistanceKm: dist
+          // La « Pharmacie Test » (compte démo) reçoit toujours la demande dès le premier palier,
+          // quelle que soit la position GPS du patient, pour pouvoir tester l'application de partout
+          calculatedDistanceKm: p.id === 'pharmacy_test' ? 0 : dist
         };
       })
       .sort((a, b) => a.calculatedDistanceKm - b.calculatedDistanceKm);

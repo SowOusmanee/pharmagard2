@@ -313,6 +313,9 @@ class DatabaseService {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cloudEvent)
+      }).then((res) => {
+        // Sur un site déployé (Netlify) ce point d'accès n'existe pas : réponse 404, pas d'erreur réseau
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
       }).catch(() => {
         // Fallback cloud si déploiement distant
         fetch(CLOUD_SYNC_TOPIC, {
