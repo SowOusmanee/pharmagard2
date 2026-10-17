@@ -84,6 +84,8 @@ function saveRequests(requests) {
 
 // Cloud pub/sub topic for cross-device real-time sync (between 2 phones)
 const CLOUD_SYNC_TOPIC = 'https://ntfy.sh/pharmagarde_keurmassar_live';
+// Le relais local /api/sync/events n'existe qu'avec le serveur de développement (npm run dev)
+const USE_LOCAL_SYNC = Boolean(import.meta.env?.DEV);
 
 // Cross-tab broadcast channel for real-time sync (same device)
 const broadcastChannel = typeof window !== 'undefined' && window.BroadcastChannel
@@ -109,7 +111,8 @@ class DatabaseService {
     if (typeof window === 'undefined' || typeof EventSource === 'undefined') return;
     try {
       // Connect to local Vite real-time sync endpoint first
-      const localSseUrl = '/api/sync/events';
+      const localSseUrl = USE_LOCAL_SYNC ? '/api/sync/events' : `${CLOUD_SYNC_TOPIC}/sse`;
+      this.cloudFallbackActive = !USE_LOCAL_SYNC;
       this.eventSource = new EventSource(localSseUrl);
 
       const handleIncomingMessage = (e) => {
@@ -309,6 +312,16 @@ class DatabaseService {
       }
 
       // Priorité 1 : Synchronisation locale directe via le serveur Vite (0 délai, réseau Wi-Fi local)
+      const postToCloud = () =>
+        fetch(CLOUD_SYNC_TOPIC, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cloudEvent)
+        }).catch(() => {});
+      if (!USE_LOCAL_SYNC) {
+        postToCloud();
+        return;
+      }
       fetch('/api/sync/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -316,14 +329,7 @@ class DatabaseService {
       }).then((res) => {
         // Sur un site déployé (Netlify) ce point d'accès n'existe pas : réponse 404, pas d'erreur réseau
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      }).catch(() => {
-        // Fallback cloud si déploiement distant
-        fetch(CLOUD_SYNC_TOPIC, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(cloudEvent)
-        }).catch(() => {});
-      });
+      }).catch(postToCloud);
     } catch {}
   }
 

@@ -190,20 +190,16 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
     'gemini-flash-latest',
     'gemini-2.5-flash'
   ].filter(Boolean))].filter((m) => !/pro/i.test(m));
-  let lastError = null;
   const attemptErrors = []; // raison de l'échec de chaque modèle, affichée au patient pour le diagnostic
 
   // Limites de temps : sans elles, un appel Gemini bloqué laisse « Scan en cours… » indéfiniment
-  const PER_MODEL_TIMEOUT_MS = 45000;
-  const TOTAL_TIMEOUT_MS = 100000;
+  const PER_MODEL_TIMEOUT_MS = 60000;
+  const TOTAL_TIMEOUT_MS = 110000;
   const deadline = Date.now() + TOTAL_TIMEOUT_MS;
 
-  for (const model of models) {
-    if (isModelOnCooldown(model)) continue;
-    const remainingMs = deadline - Date.now();
-    if (remainingMs <= 0) break;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), Math.min(PER_MODEL_TIMEOUT_MS, remainingMs));
+  // Un essai sur un modèle : renvoie { medicines, lineCount }, null si aucun produit lu, ou lève une erreur
+  const tryModel = async (model, controller) => {
+    const timer = setTimeout(() => controller.abort(), Math.min(PER_MODEL_TIMEOUT_MS, Math.max(deadline - Date.now(), 1000)));
     try {
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -218,11 +214,6 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const apiMessage = errorData?.error?.message || `HTTP ${response.status}`;
-        // Option haute résolution refusée par ce modèle : on la retire et on réessaie ce modèle
-        if (response.status === 400 && /media.?resolution/i.test(apiMessage) && requestBody.generationConfig.mediaResolution) {
-          delete requestBody.generationConfig.mediaResolution;
-          models.splice(models.indexOf(model) + 1, 0, model);
-        }
         // Quota épuisé (429) : on n'essaie plus ce modèle pendant un moment
         if (response.status === 429) setModelCooldown(model, apiMessage);
         // Clé invalide / refusée : inutile d'essayer les autres modèles
@@ -239,82 +230,141 @@ RÉPONDS STRICTEMENT EN JSON VALIDE au format suivant :
         .map((part) => part.text || '')
         .join('');
       if (!rawText) throw new Error('Réponse vide du moteur de vision');
-
-      // Nettoyage des balises markdown éventuelles (```json ... ```)
-      const cleanText = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-      let parsed;
-      try {
-        parsed = JSON.parse(cleanText);
-      } catch {
-        // Tentative d'extraction JSON partielle depuis le texte
-        const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          parsed = JSON.parse(jsonMatch[0]);
-        } else {
-          throw new Error('JSON non parsable dans la réponse');
-        }
-      }
-      const items = Array.isArray(parsed?.medicines)
-        ? parsed.medicines
-        : Array.isArray(parsed)
-        ? parsed
-        : [];
-
-      // Blacklist of non-medication terms, medical notes, and French stop words
-      const NON_MED_BLACKLIST = new Set([
-        'termine', 'terminer', 'terminee', 'fin',
-        'ordonnance', 'prescription', 'traitement',
-        'signature', 'date', 'cachet', 'tampon', 'dr', 'docteur', 'medecin',
-        'patient', 'nom', 'prenom', 'age', 'sexe',
-        'posologie', 'matin', 'midi', 'soir', 'coucher', 'jour', 'jours', 'semaine', 'mois',
-        'dosage standard', 'standard', 'total', 'quantite', 'nb', 'validite'
-      ]);
-
-      const validItems = items.filter((item) => {
-        const rawName = (item.name || '').trim().toLowerCase();
-        const cleanName = rawName.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        if (!cleanName || cleanName.length < 3) return false;
-        if (NON_MED_BLACKLIST.has(cleanName)) return false;
-        return true;
-      });
-
-      if (validItems.length > 0) {
-        console.info(`Ordonnance lue par ${model}`);
-        const lineCount = Number.isInteger(parsed?.prescribedLineCount) ? parsed.prescribedLineCount : null;
-        const medicines = validItems.map((item, index) => ({
-          id: `med_ai_${Date.now()}_${index}`,
-          name: (item.name || 'Médicament non identifié').trim(),
-          dosage: (item.dosage || 'Dosage standard').trim(),
-          form: item.form || '',
-          instructions: item.instructions || '',
-          raw: typeof item.raw === 'string' ? item.raw.trim() : '',
-          confidence: typeof item.confidence === 'number' ? Math.min(Math.max(item.confidence, 0.1), 1.0) : 0.90,
-          isVerified: typeof item.confidence === 'number' ? item.confidence >= 0.70 : true
-        }));
-        return { medicines, lineCount };
-      }
-      // Réponse valide mais aucun produit reconnu
-      lastError = new PrescriptionAnalysisError(
-        "Aucun médicament lisible sur la photo. Cadrez l'ordonnance en entier, avec un bon éclairage, puis réessayez.",
-        'NO_MEDICINE'
-      );
-      break;
+      return parseExtraction(rawText);
     } catch (err) {
-      if (err instanceof PrescriptionAnalysisError) throw err;
-      const failure = err?.name === 'AbortError' ? new Error(`${model} : délai de réponse dépassé`) : err;
-      console.warn(`Tentative modèle ${model} échouée:`, failure.message);
-      attemptErrors.push(failure.message.startsWith(model) ? failure.message : `${model} : ${failure.message}`);
-      lastError = failure;
+      if (err?.name === 'AbortError') {
+        throw new Error(controller.cancelledByWinner ? `${model} : annulé` : `${model} : délai de réponse dépassé`);
+      }
+      throw err;
     } finally {
       clearTimeout(timer);
     }
+  };
+
+  const recordFailure = (model, err) => {
+    if (/annulé$/.test(err.message)) return;
+    console.warn(`Tentative modèle ${model} échouée:`, err.message);
+    attemptErrors.push(err.message.startsWith(model) ? err.message : `${model} : ${err.message}`);
+  };
+
+  // Les 2 premiers modèles sont interrogés EN MÊME TEMPS : la première lecture valide l'emporte
+  // (les modèles gratuits sont parfois lents ; on n'attend plus l'échec du premier pour lancer le second)
+  const available = models.filter((m) => !isModelOnCooldown(m));
+  const parallelBatch = available.slice(0, 2);
+  const sequentialRest = available.slice(2);
+  let sawEmptyResult = false;
+
+  if (parallelBatch.length > 0) {
+    const controllers = parallelBatch.map(() => new AbortController());
+    try {
+      const winner = await Promise.any(
+        parallelBatch.map(async (model, i) => {
+          try {
+            const result = await tryModel(model, controllers[i]);
+            if (!result) {
+              sawEmptyResult = true;
+              throw new Error(`${model} : aucun médicament lu`);
+            }
+            return { model, result };
+          } catch (err) {
+            if (err instanceof PrescriptionAnalysisError) throw err;
+            recordFailure(model, err);
+            throw err;
+          }
+        })
+      );
+      controllers.forEach((c) => {
+        c.cancelledByWinner = true;
+        c.abort();
+      });
+      console.info(`Ordonnance lue par ${winner.model}`);
+      return winner.result;
+    } catch (aggregate) {
+      const fatal = (aggregate.errors || []).find((e) => e instanceof PrescriptionAnalysisError);
+      if (fatal) throw fatal;
+    }
   }
 
-  if (lastError instanceof PrescriptionAnalysisError) throw lastError;
+  for (const model of sequentialRest) {
+    if (deadline - Date.now() <= 0) break;
+    try {
+      const result = await tryModel(model, new AbortController());
+      if (result) {
+        console.info(`Ordonnance lue par ${model}`);
+        return result;
+      }
+      sawEmptyResult = true;
+    } catch (err) {
+      if (err instanceof PrescriptionAnalysisError) throw err;
+      recordFailure(model, err);
+    }
+  }
+
+  if (sawEmptyResult) {
+    throw new PrescriptionAnalysisError(
+      "Aucun médicament lisible sur la photo. Cadrez l'ordonnance en entier, avec un bon éclairage, puis réessayez.",
+      'NO_MEDICINE'
+    );
+  }
   throw new PrescriptionAnalysisError(
-    `Le service de lecture d'ordonnance ne répond pas. Détail : ${attemptErrors.join(' | ') || lastError?.message || 'erreur inconnue'}`,
+    `Le service de lecture d'ordonnance ne répond pas. Détail : ${attemptErrors.join(' | ') || 'aucun modèle disponible'}`,
     'API_UNAVAILABLE'
   );
+}
+
+// Lecture de la réponse JSON de Gemini : { medicines, lineCount } ou null si aucun produit valable
+function parseExtraction(rawText) {
+  // Nettoyage des balises markdown éventuelles (```json ... ```)
+  const cleanText = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+  let parsed;
+  try {
+    parsed = JSON.parse(cleanText);
+  } catch {
+    // Tentative d'extraction JSON partielle depuis le texte
+    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      parsed = JSON.parse(jsonMatch[0]);
+    } else {
+      throw new Error('JSON non parsable dans la réponse');
+    }
+  }
+  const items = Array.isArray(parsed?.medicines)
+    ? parsed.medicines
+    : Array.isArray(parsed)
+    ? parsed
+    : [];
+
+  // Blacklist of non-medication terms, medical notes, and French stop words
+  const NON_MED_BLACKLIST = new Set([
+    'termine', 'terminer', 'terminee', 'fin',
+    'ordonnance', 'prescription', 'traitement',
+    'signature', 'date', 'cachet', 'tampon', 'dr', 'docteur', 'medecin',
+    'patient', 'nom', 'prenom', 'age', 'sexe',
+    'posologie', 'matin', 'midi', 'soir', 'coucher', 'jour', 'jours', 'semaine', 'mois',
+    'dosage standard', 'standard', 'total', 'quantite', 'nb', 'validite'
+  ]);
+
+  const validItems = items.filter((item) => {
+    const rawName = (item.name || '').trim().toLowerCase();
+    const cleanName = rawName.normalize('NFD').replace(/[̀-ͯ]/g, '');
+    if (!cleanName || cleanName.length < 3) return false;
+    if (NON_MED_BLACKLIST.has(cleanName)) return false;
+    return true;
+  });
+  if (validItems.length === 0) return null;
+
+  const lineCount = Number.isInteger(parsed?.prescribedLineCount) ? parsed.prescribedLineCount : null;
+  const medicines = validItems.map((item, index) => ({
+    id: `med_ai_${Date.now()}_${index}`,
+    name: (item.name || 'Médicament non identifié').trim(),
+    dosage: (item.dosage || 'Dosage standard').trim(),
+    form: item.form || '',
+    instructions: item.instructions || '',
+    raw: typeof item.raw === 'string' ? item.raw.trim() : '',
+    confidence: typeof item.confidence === 'number' ? Math.min(Math.max(item.confidence, 0.1), 1.0) : 0.90,
+    isVerified: typeof item.confidence === 'number' ? item.confidence >= 0.70 : true
+  }));
+  return { medicines, lineCount };
 }
 
 // ---------------------------------------------------------------------------
