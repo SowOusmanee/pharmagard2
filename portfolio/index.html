@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Portfolio — Génie Mécanique</title>
-<meta name="description" content="Portfolio d'un étudiant en DUT2 Génie Mécanique et Systèmes Industriels — ESP Dakar">
+<title>Ousmane Sow — Portfolio</title>
+<meta name="description" content="Portfolio d'Ousmane Sow, étudiant en DUT Génie Mécanique et Systèmes Industriels — ESP Dakar">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <!--
@@ -112,6 +112,21 @@ section{padding:clamp(80px,12vw,160px) clamp(16px,4vw,48px);position:relative}
 .gauge i::after{content:"";position:absolute;right:-1px;top:-4px;width:1px;height:10px;background:var(--accent)}
 .ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--line-2);margin-top:6px}
 
+.sk-block+.sk-block{margin-top:72px}
+.sk-block .eyebrow{margin-bottom:24px}
+.soft{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);perspective:900px}
+.sw{background:var(--bg-soft);padding:28px 22px;position:relative;transition:background .4s,transform .5s var(--ease)}
+.sw:hover{background:#000;transform:translateZ(20px)}
+.sw::after{content:"";position:absolute;left:0;top:0;height:2px;width:100%;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .5s var(--ease)}
+.sw:hover::after{transform:scaleX(1)}
+.sw b{font-family:var(--display);font-size:28px;text-transform:uppercase;letter-spacing:.04em;display:block;line-height:1}
+.sw small{font-family:var(--mono);font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.1em;display:block;margin-top:10px}
+.doms{display:grid;grid-template-columns:repeat(3,1fr);gap:0 40px}
+.dom{display:flex;gap:16px;align-items:baseline;padding:20px 0;border-bottom:1px solid var(--line);opacity:0;transform:translateY(16px);transition:opacity .7s var(--ease),transform .7s var(--ease),padding .4s var(--ease)}
+.in .dom{opacity:1;transform:none}
+.dom:hover{padding-left:10px}
+.dom em{font-family:var(--mono);font-style:normal;font-size:11px;color:var(--accent)}
+.dom span{font-family:var(--display);font-size:21px;text-transform:uppercase;letter-spacing:.05em}
 /* Projets */
 .filters{display:flex;gap:8px;flex-wrap:wrap}
 .projects{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:24px;perspective:1400px}
@@ -185,7 +200,7 @@ footer{border-top:1px solid var(--line);padding:24px clamp(16px,4vw,48px);displa
   .links{position:fixed;inset:64px 0 auto 0;flex-direction:column;background:#000;padding:24px 16px;border-bottom:1px solid var(--line);gap:18px;transform:translateY(-130%);transition:transform .5s var(--ease)}
   .links.open{transform:none}
   .burger{display:block}
-  .about,.skills,.modal .cols{grid-template-columns:1fr}
+  .about,.doms,.modal .cols{grid-template-columns:1fr}
   .projects{grid-template-columns:1fr}
   .hud{display:none}
   .stat b{font-size:40px}
@@ -197,7 +212,7 @@ footer{border-top:1px solid var(--line);padding:24px clamp(16px,4vw,48px);displa
 <div class="reticle" id="reticle"></div>
 
 <nav id="nav">
-  <a href="#top" class="logo">P<span>/</span>GMSI</a>
+  <a href="#top" class="logo">O<span>/</span>SOW</a>
   <div class="links" id="links">
     <a href="#apropos">À propos</a>
     <a href="#competences">Compétences</a>
@@ -219,8 +234,8 @@ footer{border-top:1px solid var(--line);padding:24px clamp(16px,4vw,48px);displa
   </div>
   <div class="hero-txt">
     <div class="eyebrow"><b>●</b>&nbsp; DUT2 — Génie Mécanique &amp; Systèmes Industriels</div>
-    <h1><span class="ln"><span>Prénom Nom</span></span><span class="ln"><span>Mécanique</span></span></h1>
-    <p>Étudiant à l'École Supérieure Polytechnique de Dakar. Je conçois, je modélise et je fabrique des systèmes mécaniques — de l'esquisse au prototype.</p>
+    <h1><span class="ln"><span>Ousmane Sow</span></span><span class="ln"><span>Mécanique</span></span></h1>
+    <p>Étudiant à l'École Supérieure Polytechnique de Dakar. Je modélise, je fabrique et je programme des systèmes mécaniques — du modèle 3D à la pièce finie.</p>
     <div class="cta">
       <a href="#projets" class="btn">Voir les projets →</a>
       <a href="#contact" class="btn alt">Me contacter</a>
@@ -234,21 +249,21 @@ footer{border-top:1px solid var(--line);padding:24px clamp(16px,4vw,48px);displa
     <div class="head reveal"><h2>À propos</h2><span class="num">01 / 05</span></div>
     <div class="about">
       <div class="reveal">
-        <p class="lead">Je transforme un cahier des charges en <mark>pièces qui tournent</mark>, qui tiennent et qui se fabriquent.</p>
+        <p class="lead">Esprit d'analyse, <mark>pratique d'atelier</mark> et sens du travail en équipe.</p>
         <div class="stats">
-          <div class="stat"><b data-count="6">0</b><small>Projets</small></div>
-          <div class="stat"><b data-count="8">0</b><small>Logiciels</small></div>
-          <div class="stat"><b data-count="2">0</b><small>Années ESP</small></div>
+          <div class="stat"><b data-count="3">0</b><small>Projets</small></div>
+          <div class="stat"><b data-count="6">0</b><small>Logiciels</small></div>
+          <div class="stat"><b data-count="4">0</b><small>Langues</small></div>
         </div>
       </div>
       <div class="reveal">
-        <p>Passionné par la conception mécanique et la production industrielle, je m'intéresse autant au dimensionnement d'un arbre qu'à l'optimisation d'une ligne de production. Ma formation en GMSI m'a donné des bases solides en CAO, fabrication, RDM, automatisme et maintenance.</p>
-        <p>Je recherche un stage où mettre ces compétences au service de projets concrets.</p>
+        <p>Ce qui me motive, c'est de voir un projet passer de l'écran à l'atelier : concevoir une pièce, la simuler, la fabriquer puis la contrôler. J'aime autant la rigueur du calcul que le concret de l'usinage, et je prends volontiers en main la coordination d'une équipe.</p>
+        <p>Curieux et toujours prêt à apprendre, je cherche une opportunité de mettre cette énergie au service de projets réels.</p>
         <div class="cartouche">
-          <div><span>NOM</span><strong>Prénom Nom</strong></div>
-          <div><span>FORMATION</span><strong>DUT2 GMSI — ESP Dakar (UCAD)</strong></div>
-          <div><span>LOCALISATION</span><strong>Dakar, Sénégal</strong></div>
-          <div><span>LANGUES</span><strong>Français · Wolof · Anglais</strong></div>
+          <div><span>NOM</span><strong>Ousmane Sow</strong></div>
+          <div><span>FORMATION</span><strong>DUT GMSI — ESP Dakar (UCAD)</strong></div>
+          <div><span>LOCALISATION</span><strong>Keur Massar, Dakar — Sénégal</strong></div>
+          <div><span>LANGUES</span><strong>Français · Anglais · Wolof · Peulh</strong></div>
           <div><span>STATUT</span><strong style="color:var(--accent)">Disponible pour un stage</strong></div>
         </div>
       </div>
@@ -259,8 +274,8 @@ footer{border-top:1px solid var(--line);padding:24px clamp(16px,4vw,48px);displa
 <section id="competences" style="background:var(--bg-soft)">
   <div class="wrap">
     <div class="head reveal"><h2>Compétences</h2><span class="num">02 / 05</span></div>
-    <div class="tabs reveal" id="tabs"></div>
-    <div class="skills" id="skills"></div>
+    <div class="sk-block reveal"><div class="eyebrow"><b>A</b> — Logiciels &amp; outils</div><div class="soft" id="soft"></div></div>
+    <div class="sk-block reveal"><div class="eyebrow"><b>B</b> — Domaines de compétences</div><div class="doms" id="doms"></div></div>
   </div>
 </section>
 
@@ -283,16 +298,16 @@ footer{border-top:1px solid var(--line);padding:24px clamp(16px,4vw,48px);displa
 <section id="contact" class="contact" style="background:var(--bg-soft)">
   <div class="wrap reveal">
     <div class="eyebrow"><b>05 / 05</b> — Travaillons ensemble</div>
-    <h2 style="margin-top:20px"><a href="mailto:email@exemple.com">Parlons<br>projet.</a></h2>
+    <h2 style="margin-top:20px"><a href="mailto:sowousmanee2008@gmail.com">Parlons<br>projet.</a></h2>
     <div class="socials">
-      <a class="btn" href="mailto:email@exemple.com">Email</a>
-      <a class="btn alt" href="#" target="_blank" rel="noopener">LinkedIn</a>
-      <a class="btn alt" href="#" download>CV (PDF)</a>
+      <a class="btn" href="mailto:sowousmanee2008@gmail.com">sowousmanee2008@gmail.com</a>
+      <a class="btn alt" href="tel:+221706020002">+221 70 602 00 02</a>
+      <!-- GitHub / CV : à ajouter -->
     </div>
   </div>
 </section>
 
-<footer><span>© 2026 — Prénom Nom</span><span>ESP Dakar · Génie Mécanique &amp; Systèmes Industriels</span></footer>
+<footer><span>© 2026 — Ousmane Sow</span><span>ESP Dakar · Génie Mécanique &amp; Systèmes Industriels</span></footer>
 
 <div class="modal" id="modal"><div class="box"><button class="close" id="close">Fermer ✕</button><div id="mbody"></div></div></div>
 
@@ -301,55 +316,45 @@ footer{border-top:1px solid var(--line);padding:24px clamp(16px,4vw,48px);displa
 /* =====================================================================
    DONNÉES — à remplacer par les vrais projets / compétences
    ===================================================================== */
-const SKILLS = {
-  "CAO / DAO": [["SolidWorks",85],["AutoCAD",80],["CATIA V5",60],["Dessin technique / cotation ISO",85]],
-  "Fabrication": [["Tournage / fraisage conventionnel",75],["Programmation CN (G-code)",60],["Soudage",55],["Métrologie & contrôle",70]],
-  "Calcul & RDM": [["Résistance des matériaux",75],["Simulation éléments finis",55],["Mécanique des fluides",60],["Thermodynamique",60]],
-  "Automatisme": [["Automates (Grafcet / Ladder)",65],["Pneumatique & hydraulique",70],["Électrotechnique",60],["Arduino",55]],
-  "Gestion & soft skills": [["Maintenance industrielle (AMDEC)",65],["Gestion de production",60],["Travail en équipe",90],["Pack Office / Excel",85]]
-};
+const SOFTWARE = [
+  ["SolidWorks","CAO & simulation"],["KiCad","CAO électronique"],["Arduino IDE","Programmation"],
+  ["Python","Calcul scientifique"],["MATLAB","Analyse numérique"],["Excel","Traitement de données"]
+];
 
-// visual: "gear" | "frame" | "piston" | "plc" | "beam" | "cnc" — ou image: "chemin/vers/photo.jpg"
+const DOMAINS = [
+  "Conception & modélisation 3D","Simulation mécanique","Dimensionnement",
+  "Fabrication & usinage","Contrôle & métrologie","Codage",
+  "Électronique & circuits","Analyse de données numériques","Pneumatique",
+  "Maintenance industrielle","Sécurité au travail","Gestion d'équipe"
+];
+
+// visual: "curve" | "lathe" | "arm" | "gear" ... — ou une photo : "img/projet.jpg"
+// role / duration / team : laisser "" pour masquer le champ
 const PROJECTS = [
-  {title:"Réducteur à engrenages",cat:"Conception",year:"2026",visual:"gear",
-   desc:"Conception et dimensionnement d'un réducteur à deux étages pour un convoyeur.",
-   tags:["SolidWorks","RDM","Mise en plan"],
-   details:["Calcul des modules et entraxes","Choix des roulements","Mise en plan d'ensemble et nomenclature"],
-   role:"Conception & calculs", duration:"6 semaines", team:"3 étudiants"},
-  {title:"Pièce usinée sur tour CN",cat:"Fabrication",year:"2025",visual:"cnc",
-   desc:"Gamme d'usinage et programmation d'un arbre étagé sur tour à commande numérique.",
-   tags:["G-code","Tournage","Métrologie"],
-   details:["Contrat de phase","Programmation ISO","Contrôle dimensionnel"],
-   role:"Préparation & usinage", duration:"3 semaines", team:"Binôme"},
-  {title:"Banc pneumatique automatisé",cat:"Automatisme",year:"2026",visual:"plc",
-   desc:"Automatisation d'un poste de tri par vérins pneumatiques piloté par automate.",
-   tags:["Grafcet","API","Pneumatique"],
-   details:["Analyse fonctionnelle","Grafcet de conduite","Câblage et essais"],
-   role:"Programmation", duration:"4 semaines", team:"4 étudiants"},
-  {title:"Étude d'un portique",cat:"Calcul",year:"2025",visual:"beam",
-   desc:"Vérification d'une structure de levage par calcul RDM et simulation éléments finis.",
-   tags:["RDM","Simulation","Excel"],
-   details:["Modélisation des charges","Contraintes et flèche","Comparaison calcul / simulation"],
-   role:"Calcul", duration:"2 semaines", team:"Individuel"},
-  {title:"Châssis mécano-soudé",cat:"Fabrication",year:"2026",visual:"frame",
-   desc:"Conception et réalisation d'un châssis support de machine en profilés soudés.",
-   tags:["Soudage","Débit","SolidWorks"],
-   details:["Modèle 3D tôlerie / mécano-soudé","Plan de débit","Fabrication en atelier"],
-   role:"Fabrication", duration:"5 semaines", team:"3 étudiants"},
-  {title:"Plan de maintenance",cat:"Conception",year:"2025",visual:"piston",
-   desc:"Analyse AMDEC et plan de maintenance préventive d'un compresseur.",
-   tags:["AMDEC","Maintenance","GMAO"],
-   details:["Décomposition fonctionnelle","Criticité des défaillances","Planning préventif"],
-   role:"Analyse", duration:"3 semaines", team:"Binôme"}
+  {title:"Essai de traction",cat:"Matériaux",year:"2026",visual:"curve",
+   desc:"Étude du comportement d'un matériau soumis à la traction, de l'essai en laboratoire jusqu'à la simulation.",
+   tags:["Essai mécanique","Analyse de données","SolidWorks"],
+   details:["Coordination de l'équipe et organisation de l'essai","Exploitation des mesures et courbe contrainte–déformation","Modélisation 3D et simulation de l'éprouvette"],
+   role:"Chef d'équipe", duration:"", team:"Équipe"},
+  {title:"Tourne-à-gauche",cat:"Fabrication",year:"2026",visual:"lathe",
+   desc:"Fabrication complète d'un outil d'atelier, de la lecture du plan au contrôle final.",
+   tags:["Tournage","Fraisage","Métrologie"],
+   details:["Préparation de la gamme de fabrication","Usinage au tour et à la fraiseuse","Contrôle des cotes et des tolérances"],
+   role:"Fabrication", duration:"", team:""},
+  {title:"Bras robotique 3 axes",cat:"Robotique",year:"2026",visual:"arm",
+   desc:"Conception d'un bras articulé à trois degrés de liberté, piloté par microcontrôleur.",
+   tags:["SolidWorks","KiCad","Arduino"],
+   details:["Modélisation et simulation des pièces","Conception du circuit électronique","Codage du pilotage des moteurs"],
+   role:"Conception & codage", duration:"", team:""}
 ];
 
 const TIMELINE = [
-  ["2024 — 2026","DUT Génie Mécanique & Systèmes Industriels","École Supérieure Polytechnique de Dakar — conception, fabrication, automatisme, maintenance."],
-  ["2025","Stage / projet tutoré","Entreprise ou laboratoire — description des missions réalisées."],
-  ["2024","Baccalauréat scientifique","Lycée — série S, mention."]
+  ["2025 — 2027","DUT Génie Mécanique & Systèmes Industriels","École Supérieure Polytechnique de Dakar — conception, fabrication, électronique, maintenance."],
+  ["En continu","Certifications en ligne","Programmation Python (Harvard CS50P, en cours) · Elements of AI (Université d'Helsinki)."],
+  ["2024 — 2025","Baccalauréat série S1","Collège Notre Dame du Liban — mention Assez-Bien."]
 ];
 
-const TOOLS = ["SolidWorks","AutoCAD","CATIA","Excel","Arduino","TIA Portal","Fusion 360","MATLAB"];
+const TOOLS = ["Conception","Simulation","Usinage","Codage","Électronique","Analyse de données","Maintenance"];
 
 /* =====================================================================
    Visuels techniques en SVG (traits fins, style plan)
@@ -363,12 +368,15 @@ function vis(type){
     plc:`<rect x="60" y="80" width="120" height="140" ${s}/><g fill="#ff5a1f">${[0,1,2,3,4].map(i=>`<circle cx="80" cy="${100+i*22}" r="3" style="animation:blink 1.${i}s infinite"/>`).join("")}</g><rect x="230" y="130" width="140" height="40" ${s}/><rect x="250" y="140" width="${60}" height="20" ${a} style="animation:ram 2s ease-in-out infinite alternate"/><path d="M180 150h50" ${d}/>`,
     beam:`<path d="M80 230V90h300v140" ${s}/><path d="M80 90l40 30M380 90l-40 30" ${s}/><path d="M230 90v50" ${a}/><path d="M220 140h20l-10 14z" fill="#ff5a1f"/><path d="M80 90 Q230 ${120} 380 90" ${d}/><text x="236" y="80" fill="#ff5a1f" font-family="monospace" font-size="10">F = 5 kN</text>`,
     frame:`<path d="M90 220l60-40h220l-60 40z M90 220v-110l60-40v110 M150 70h220v110 M310 220v-110l60-40 M90 110h220l60-40" ${s}/><path d="M90 110h220v110" ${d}/><circle cx="150" cy="180" r="4" fill="#ff5a1f"/><circle cx="310" cy="110" r="4" fill="#ff5a1f"/>`,
+    curve:`<path d="M70 240H400M70 240V60" ${s}/><path d="M70 240 L150 110 Q190 92 240 96 Q320 104 350 140 L362 170" ${a} stroke-dasharray="460" style="animation:draw 3s ease-out infinite"/><path d="M150 110V240" ${d}/><text x="76" y="56" fill="#8a8a92" font-family="monospace" font-size="10">σ (MPa)</text><text x="372" y="256" fill="#8a8a92" font-family="monospace" font-size="10">ε</text><text x="156" y="104" fill="#ff5a1f" font-family="monospace" font-size="10">Re</text>`,
+    lathe:`<path d="M80 150h40v-28h150v28h20v-14h70v28h-70v-14h-20v28H120v-28H80" ${s}/><path d="M60 150h360" ${d}/><path d="M140 122l6 28-6 28M156 122l6 28-6 28M172 122l6 28-6 28M188 122l6 28-6 28" stroke="#3a3a3f" fill="none"/><g style="animation:tool 3s ease-in-out infinite alternate"><path d="M300 92l14 26h-28z" ${a}/></g><text x="80" y="230" fill="#8a8a92" font-family="monospace" font-size="10">chariotage · moletage · filetage</text>`,
+    arm:`<path d="M150 250h160M190 250v-30h80v30" ${s}/><g style="transform-origin:230px 220px;animation:j1 4s ease-in-out infinite alternate"><path d="M230 220L180 130" ${s} stroke-width="6" stroke-linecap="round"/><circle cx="230" cy="220" r="9" ${a}/><g style="transform-origin:180px 130px;animation:j2 3s ease-in-out infinite alternate"><path d="M180 130L270 90" ${s} stroke-width="5" stroke-linecap="round"/><circle cx="180" cy="130" r="8" ${a}/><path d="M270 90l16-10M270 90l16 10" ${a} stroke-width="2"/></g></g>`,
     piston:`<rect x="190" y="60" width="80" height="170" ${s}/><g style="animation:pist 1.2s ease-in-out infinite alternate"><rect x="196" y="90" width="68" height="40" ${a}/><path d="M230 130v70" ${s}/></g><circle cx="230" cy="240" r="30" ${d}/>`
   };
   return `<svg viewBox="0 0 460 300" preserveAspectRatio="xMidYMid meet"><defs><pattern id="g" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" stroke="#141416" fill="none"/></pattern></defs><rect width="460" height="300" fill="url(#g)"/>${map[type]||map.gear}</svg>`;
 }
 const css=document.createElement("style");
-css.textContent="@keyframes sp{to{transform:rotate(360deg)}}@keyframes tool{to{transform:translateX(-200px)}}@keyframes blink{50%{opacity:.15}}@keyframes ram{to{transform:translateX(70px)}}@keyframes pist{to{transform:translateY(60px)}}";
+css.textContent="@keyframes sp{to{transform:rotate(360deg)}}@keyframes tool{to{transform:translateX(-200px)}}@keyframes blink{50%{opacity:.15}}@keyframes ram{to{transform:translateX(70px)}}@keyframes pist{to{transform:translateY(60px)}}@keyframes draw{from{stroke-dashoffset:460}to{stroke-dashoffset:0}}@keyframes j1{from{transform:rotate(-8deg)}to{transform:rotate(14deg)}}@keyframes j2{from{transform:rotate(-20deg)}to{transform:rotate(18deg)}}";
 document.head.appendChild(css);
 const visual=p=>/\.(jpe?g|png|webp|gif)$/i.test(p.visual)?`<img src="${p.visual}" alt="${p.title}" loading="lazy">`:vis(p.visual);
 
@@ -378,19 +386,13 @@ const visual=p=>/\.(jpe?g|png|webp|gif)$/i.test(p.visual)?`<img src="${p.visual}
 const $=s=>document.querySelector(s);
 
 // Compétences
-const tabs=$("#tabs"), skillsEl=$("#skills");
-function showSkills(cat){
-  [...tabs.children].forEach(t=>t.classList.toggle("on",t.dataset.c===cat));
-  skillsEl.innerHTML=SKILLS[cat].map(([n,v])=>`<div class="skill"><div class="row"><span>${n}</span><em>${v} %</em></div><div class="gauge"><i data-v="${v}"></i></div><div class="ticks"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div></div>`).join("");
-  requestAnimationFrame(()=>[...skillsEl.children].forEach((el,i)=>setTimeout(()=>{el.classList.add("in");el.querySelector("i").style.width=el.querySelector("i").dataset.v+"%"},i*90)));
-}
-tabs.innerHTML=Object.keys(SKILLS).map(c=>`<button class="tab" data-c="${c}">${c}</button>`).join("");
-tabs.onclick=e=>e.target.dataset.c&&showSkills(e.target.dataset.c);
+$("#soft").innerHTML=SOFTWARE.map(([n,d])=>`<div class="sw"><b>${n}</b><small>${d}</small></div>`).join("");
+$("#doms").innerHTML=DOMAINS.map((d,i)=>`<div class="dom" style="transition-delay:${i*60}ms"><em>${String(i+1).padStart(2,"0")}</em><span>${d}</span></div>`).join("");
 
 // Projets
 const grid=$("#projects"), filters=$("#filters");
 grid.innerHTML=PROJECTS.map((p,i)=>`<article class="card" data-cat="${p.cat}" data-i="${i}"><div class="vis">${visual(p)}</div><div class="body"><div class="meta"><b>${String(i+1).padStart(2,"0")} — ${p.cat}</b><span>${p.year}</span></div><h3>${p.title}</h3><p>${p.desc}</p><div class="tags">${p.tags.map(t=>`<span>${t}</span>`).join("")}</div></div><div class="glare"></div></article>`).join("")
-  +`<p class="placeholder-note" style="grid-column:1/-1">// Projets d'exemple — à remplacer par tes vrais projets (tableau PROJECTS dans le script).</p>`;
+  +`<p class="placeholder-note" style="grid-column:1/-1">// Photos et fichiers des projets à venir.</p>`;
 filters.innerHTML=["Tous",...new Set(PROJECTS.map(p=>p.cat))].map((c,i)=>`<button class="tab ${i?"":"on"}" data-f="${c}">${c}</button>`).join("");
 filters.onclick=e=>{const f=e.target.dataset.f;if(!f)return;
   [...filters.children].forEach(b=>b.classList.toggle("on",b.dataset.f===f));
@@ -407,7 +409,7 @@ grid.querySelectorAll(".card").forEach(c=>{
 // Modale
 const modal=$("#modal");
 function openModal(p,i){
-  $("#mbody").innerHTML=`<div class="vis">${visual(p)}</div><div class="in"><div class="eyebrow"><b>${String(i+1).padStart(2,"0")}</b> — ${p.cat} · ${p.year}</div><h3>${p.title}</h3><p style="color:var(--ink-2)">${p.desc}</p><div class="cols"><div><div class="eyebrow" style="margin-bottom:8px">Réalisations</div><ul>${p.details.map(d=>`<li>${d}</li>`).join("")}</ul></div><div class="cartouche" style="margin:0"><div><span>RÔLE</span><strong>${p.role}</strong></div><div><span>DURÉE</span><strong>${p.duration}</strong></div><div><span>ÉQUIPE</span><strong>${p.team}</strong></div></div></div><div class="tags">${p.tags.map(t=>`<span>${t}</span>`).join("")}</div></div>`;
+  $("#mbody").innerHTML=`<div class="vis">${visual(p)}</div><div class="in"><div class="eyebrow"><b>${String(i+1).padStart(2,"0")}</b> — ${p.cat} · ${p.year}</div><h3>${p.title}</h3><p style="color:var(--ink-2)">${p.desc}</p><div class="cols"><div><div class="eyebrow" style="margin-bottom:8px">Réalisations</div><ul>${p.details.map(d=>`<li>${d}</li>`).join("")}</ul></div><div class="cartouche" style="margin:0">${[["RÔLE",p.role],["DURÉE",p.duration],["ÉQUIPE",p.team]].filter(x=>x[1]).map(([k,v])=>`<div><span>${k}</span><strong>${v}</strong></div>`).join("")}</div></div><div class="tags">${p.tags.map(t=>`<span>${t}</span>`).join("")}</div></div>`;
   modal.classList.add("open");document.body.style.overflow="hidden";
 }
 const closeModal=()=>{modal.classList.remove("open");document.body.style.overflow=""};
@@ -424,9 +426,8 @@ $("#track").innerHTML=[...TOOLS,...TOOLS].map(t=>`<span>${t} ✦</span>`).join("
 // Apparitions au scroll
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)return;e.target.classList.add("in");
   e.target.querySelectorAll("[data-count]").forEach(n=>{const t=+n.dataset.count,st=performance.now();(function f(now){const k=Math.min((now-st)/1200,1);n.textContent=Math.round(t*(1-Math.pow(1-k,3)));k<1&&requestAnimationFrame(f)})(st)});
-  if(e.target.id==="competences")showSkills(Object.keys(SKILLS)[0]);
   io.unobserve(e.target)}),{threshold:.15});
-document.querySelectorAll(".reveal,#competences").forEach(el=>io.observe(el));
+document.querySelectorAll(".reveal").forEach(el=>io.observe(el));
 
 // Nav : fond au scroll, lien actif, progression timeline
 const nav=$("#nav"), navLinks=[...document.querySelectorAll(".links a")];
