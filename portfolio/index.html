@@ -168,11 +168,28 @@ section{padding:clamp(80px,12vw,160px) clamp(16px,4vw,48px);position:relative}
 .modal .box{background:var(--bg);border:1px solid var(--line-2);border-radius:8px;width:min(900px,100%);max-height:88vh;overflow:auto;transform:translateY(30px) rotateX(8deg);transition:transform .6s var(--ease)}
 .modal.open .box{transform:none}
 .modal .vis{aspect-ratio:16/8;background:#faf9f6;border-bottom:1px solid var(--line)}
-.modal .vis svg,.modal .vis img{width:100%;height:100%;object-fit:cover}
+.modal .vis svg,.modal .vis img{width:100%;height:100%;object-fit:contain;background:#fff}
 .modal .in{padding:clamp(20px,4vw,40px)}
 .modal h3{font-size:clamp(32px,5vw,52px);margin:10px 0 18px}
 .modal .cols{display:grid;grid-template-columns:2fr 1fr;gap:32px;margin-top:24px}
 .modal ul{list-style:none}
+.modal .cartouche{align-self:start}.modal .cartouche div{grid-template-columns:90px 1fr}
+.figs{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-top:28px}
+.figs div{background:var(--panel);padding:18px}
+.figs b{font-family:var(--display);font-size:clamp(22px,3vw,32px);display:block;line-height:1}
+.figs small{font-family:var(--mono);font-size:10.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.08em}
+.gal{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+.gal figure{margin:0;cursor:zoom-in;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff}
+.gal img{width:100%;aspect-ratio:4/3;object-fit:contain;display:block;transition:transform .6s var(--ease)}
+.gal figure:hover img{transform:scale(1.06)}
+.gal figcaption{font-family:var(--mono);font-size:10.5px;color:var(--mute);padding:8px 10px;border-top:1px solid var(--line)}
+.lb{position:fixed;inset:0;z-index:150;background:rgba(245,243,239,.96);display:grid;place-items:center;padding:24px;opacity:0;pointer-events:none;transition:opacity .35s;cursor:zoom-out}
+.lb.open{opacity:1;pointer-events:auto}
+.lb img{max-width:100%;max-height:82vh;box-shadow:0 30px 60px -30px rgba(0,0,0,.4);transform:scale(.94);transition:transform .5s var(--ease)}
+.lb.open img{transform:none}
+.lb p{font-family:var(--mono);font-size:12px;color:var(--ink-2);margin-top:14px;text-align:center}
+.lb button{position:absolute;top:50%;background:var(--panel);border:1px solid var(--line-2);border-radius:50%;width:48px;height:48px;font-size:18px;cursor:pointer;color:var(--ink)}
+.lb .prev{left:16px}.lb .next{right:16px}
 .modal li{padding:8px 0;border-bottom:1px solid var(--line);color:var(--ink-2);font-size:15px}
 .modal li::before{content:"→ ";color:var(--accent)}
 .close{position:sticky;top:12px;float:right;margin:12px;background:var(--bg);border:1px solid var(--line-2);color:var(--ink);border-radius:32px;padding:8px 16px;font-family:var(--display);letter-spacing:.14em;cursor:pointer;z-index:2}
@@ -216,6 +233,7 @@ footer{border-top:1px solid var(--line);padding:24px clamp(16px,4vw,48px);displa
   .links.open{transform:none}
   .burger{display:block}
   .about,.modal .cols{grid-template-columns:1fr}
+  .figs{grid-template-columns:repeat(2,1fr)}.gal{grid-template-columns:repeat(2,1fr)}
   .doms{grid-template-columns:repeat(2,1fr)}
   .projects{grid-template-columns:1fr}
   .hud{display:none}
@@ -267,7 +285,7 @@ footer{border-top:1px solid var(--line);padding:24px clamp(16px,4vw,48px);displa
       <div class="reveal">
         <p class="lead">Esprit d'analyse, <mark>pratique d'atelier</mark> et sens du travail en équipe.</p>
         <div class="stats">
-          <div class="stat"><b data-count="3">0</b><small>Projets</small></div>
+          <div class="stat"><b data-count="4">0</b><small>Projets</small></div>
           <div class="stat"><b data-count="6">0</b><small>Logiciels</small></div>
           <div class="stat"><b data-count="4">0</b><small>Langues</small></div>
         </div>
@@ -365,10 +383,19 @@ const DOMAINS = [
 // visual: "curve" | "lathe" | "arm" | "gear" ... — ou une photo : "img/projet.jpg"
 // role / duration / team : laisser "" pour masquer le champ
 const PROJECTS = [
-  {title:"Essai de traction",cat:"Matériaux",year:"2026",visual:"curve",
-   desc:"Étude du comportement d'un matériau soumis à la traction, de l'essai en laboratoire jusqu'à la simulation.",
-   tags:["Essai mécanique","Analyse de données","SolidWorks"],
-   details:["Coordination de l'équipe et organisation de l'essai","Exploitation des mesures et courbe contrainte–déformation","Modélisation 3D et simulation de l'éprouvette"],
+  {title:"Réducteur roue et vis sans fin",cat:"Conception",year:"2026",visual:"img/reducteur-cover.jpg",
+   desc:"Analyse complète d'un réducteur à forte démultiplication entre deux axes perpendiculaires : fonctionnement, analyse fonctionnelle, modélisation 3D de chaque pièce et étude des liaisons.",
+   tags:["SolidWorks","Analyse fonctionnelle","Mise en plan","Liaisons"],
+   figures:[["1/84","Rapport de réduction"],["Z 84","Dents de la roue"],["m 2","Module"],["10","Pièces modélisées"]],
+   details:["Étude du principe de fonctionnement et de la cinématique","Analyse fonctionnelle : bête à cornes, FAST, SADT","Modélisation 3D de toutes les pièces et assemblage complet","Dessins de définition (arbre, carter, coussinet, roulements)","Modélisation des liaisons et des efforts transmis","Notices de démontage / remontage et diagramme d'Ishikawa"],
+   gallery:[["img/reducteur-assemblage.jpg","Assemblage complet sous SolidWorks"],["img/reducteur-roue-vis.jpg","Engrènement roue et vis sans fin"],["img/reducteur-fast.jpg","Analyse FAST"],["img/reducteur-sadt.jpg","Diagramme SADT"],["img/reducteur-bete-a-corne.jpg","Bête à cornes"],["img/reducteur-chaine.jpg","Chaîne cinématique"],["img/reducteur-arbre.jpg","Dessin de définition — arbre de sortie"],["img/reducteur-carter.jpg","Dessin de définition — carter"],["img/reducteur-coussinet.jpg","Dessin de définition — coussinet"],["img/reducteur-roulement.jpg","Roulement"],["img/reducteur-ishikawa.jpg","Diagramme d'Ishikawa"]],
+   role:"Analyse & modélisation", duration:"", team:"Binôme"},
+  {title:"Essai de traction — Al 6061-T6",cat:"Matériaux",year:"2026",visual:"img/traction-von-mises.jpg",
+   desc:"Pourquoi des arbres en aluminium cassent-ils en service ? Caractérisation d'un alliage 6061-T6 par essai de traction, puis comparaison avec une simulation par éléments finis.",
+   tags:["Essai mécanique","Excel","Simulation EF","SolidWorks"],
+   figures:[["274,5 MPa","Limite d'élasticité"],["317,7 MPa","Résistance maximale"],["≈ 18 %","Allongement à la rupture"],["0,18 %","Écart essai / simulation"]],
+   details:["Coordination de l'équipe et organisation du travail","Recherche documentaire : composition et traitements thermiques (O, T4, T6)","Traitement des mesures et tracé de la courbe contrainte–déformation","Calcul des caractéristiques mécaniques (Re, Rm, E, A, énergie)","Simulation non linéaire de l'éprouvette : contraintes, déformations, déplacements","Comparaison et interprétation des écarts essai / simulation"],
+   gallery:[["img/traction-von-mises.jpg","Contraintes de von Mises"],["img/traction-deformations.jpg","Déformations équivalentes"],["img/traction-deplacements.jpg","Déplacements résultants"],["img/traction-modele.jpg","Modèle 3D de l'éprouvette"],["img/traction-eprouvette.jpg","Éprouvette normalisée ASTM E8"],["img/traction-machine.jpg","Machine d'essai de traction"]],
    role:"Chef d'équipe", duration:"", team:"Équipe"},
   {title:"Tourne-à-gauche",cat:"Fabrication",year:"2026",visual:"lathe",
    desc:"Fabrication complète d'un outil d'atelier, de la lecture du plan au contrôle final.",
@@ -437,7 +464,7 @@ document.querySelectorAll(".sw,.dom").forEach(el=>{
 // Projets
 const grid=$("#projects"), filters=$("#filters");
 grid.innerHTML=PROJECTS.map((p,i)=>`<article class="card" data-cat="${p.cat}" data-i="${i}"><div class="vis">${visual(p)}</div><div class="body"><div class="meta"><b>${String(i+1).padStart(2,"0")} — ${p.cat}</b><span>${p.year}</span></div><h3>${p.title}</h3><p>${p.desc}</p><div class="tags">${p.tags.map(t=>`<span>${t}</span>`).join("")}</div></div><div class="glare"></div></article>`).join("")
-  +`<p class="placeholder-note" style="grid-column:1/-1">// Photos et fichiers des projets à venir.</p>`;
+  +`<p class="placeholder-note" style="grid-column:1/-1">// Photos du tourne-à-gauche et du bras robotique à venir.</p>`;
 filters.innerHTML=["Tous",...new Set(PROJECTS.map(p=>p.cat))].map((c,i)=>`<button class="tab ${i?"":"on"}" data-f="${c}">${c}</button>`).join("");
 filters.onclick=e=>{const f=e.target.dataset.f;if(!f)return;
   [...filters.children].forEach(b=>b.classList.toggle("on",b.dataset.f===f));
@@ -454,12 +481,20 @@ grid.querySelectorAll(".card").forEach(c=>{
 // Modale
 const modal=$("#modal");
 function openModal(p,i){
-  $("#mbody").innerHTML=`<div class="vis">${visual(p)}</div><div class="in"><div class="eyebrow"><b>${String(i+1).padStart(2,"0")}</b> — ${p.cat} · ${p.year}</div><h3>${p.title}</h3><p style="color:var(--ink-2)">${p.desc}</p><div class="cols"><div><div class="eyebrow" style="margin-bottom:8px">Réalisations</div><ul>${p.details.map(d=>`<li>${d}</li>`).join("")}</ul></div><div class="cartouche" style="margin:0">${[["RÔLE",p.role],["DURÉE",p.duration],["ÉQUIPE",p.team]].filter(x=>x[1]).map(([k,v])=>`<div><span>${k}</span><strong>${v}</strong></div>`).join("")}</div></div><div class="tags">${p.tags.map(t=>`<span>${t}</span>`).join("")}</div></div>`;
+  $("#mbody").innerHTML=`<div class="vis">${visual(p)}</div><div class="in"><div class="eyebrow"><b>${String(i+1).padStart(2,"0")}</b> — ${p.cat} · ${p.year}</div><h3>${p.title}</h3><p style="color:var(--ink-2)">${p.desc}</p>${p.figures?`<div class="figs">${p.figures.map(([v,l])=>`<div><b>${v}</b><small>${l}</small></div>`).join("")}</div>`:""}<div class="cols"><div><div class="eyebrow" style="margin-bottom:8px">Réalisations</div><ul>${p.details.map(d=>`<li>${d}</li>`).join("")}</ul></div><div class="cartouche" style="margin:0">${[["RÔLE",p.role],["DURÉE",p.duration],["ÉQUIPE",p.team]].filter(x=>x[1]).map(([k,v])=>`<div><span>${k}</span><strong>${v}</strong></div>`).join("")}</div></div><div class="tags">${p.tags.map(t=>`<span>${t}</span>`).join("")}</div>${p.gallery?`<div class="eyebrow" style="margin-top:36px">Galerie — ${p.gallery.length} visuels</div><div class="gal">${p.gallery.map(([src,c],k)=>`<figure data-k="${k}"><img src="${src}" alt="${c}" loading="lazy"><figcaption>${c}</figcaption></figure>`).join("")}</div>`:""}</div>`;
+  $("#mbody").querySelectorAll(".gal figure").forEach(f=>f.onclick=()=>openLb(p.gallery,+f.dataset.k));
   modal.classList.add("open");document.body.style.overflow="hidden";
 }
+// Visionneuse
+const lb=document.createElement("div");lb.className="lb";lb.innerHTML='<button class="prev" aria-label="Précédent">←</button><div style="text-align:center"><img alt=""><p></p></div><button class="next" aria-label="Suivant">→</button>';document.body.appendChild(lb);
+let lbSet=[],lbK=0;
+function showLb(){const [src,c]=lbSet[lbK];lb.querySelector("img").src=src;lb.querySelector("p").textContent=`${lbK+1} / ${lbSet.length} — ${c}`}
+function openLb(set,k){lbSet=set;lbK=k;showLb();lb.classList.add("open")}
+lb.onclick=e=>{if(e.target.closest(".prev")){lbK=(lbK-1+lbSet.length)%lbSet.length;showLb()}else if(e.target.closest(".next")){lbK=(lbK+1)%lbSet.length;showLb()}else lb.classList.remove("open")};
+addEventListener("keydown",e=>{if(!lb.classList.contains("open"))return;if(e.key==="ArrowRight"){lbK=(lbK+1)%lbSet.length;showLb()}if(e.key==="ArrowLeft"){lbK=(lbK-1+lbSet.length)%lbSet.length;showLb()}});
 const closeModal=()=>{modal.classList.remove("open");document.body.style.overflow=""};
 $("#close").onclick=closeModal;modal.onclick=e=>e.target===modal&&closeModal();
-addEventListener("keydown",e=>e.key==="Escape"&&closeModal());
+addEventListener("keydown",e=>{if(e.key!=="Escape")return;if(lb.classList.contains("open"))lb.classList.remove("open");else closeModal()});
 
 // Parcours & outils
 $("#timeline").insertAdjacentHTML("beforeend",TIMELINE.map(([d,t,x])=>`<div class="step reveal"><div class="date">${d}</div><h3>${t}</h3><p>${x}</p></div>`).join(""));
