@@ -217,6 +217,10 @@ section{padding:clamp(80px,12vw,160px) clamp(16px,4vw,48px);position:relative}
 .contact h2{font-size:clamp(48px,10vw,128px)}
 .contact h2 a{display:inline-block;transition:color .4s}
 .contact h2 a:hover{color:var(--accent)}
+.nav-cv{color:var(--accent)!important}
+[data-link].soon{opacity:.45;cursor:not-allowed}.btn.soon{border-style:dashed}
+[data-link].soon::after{content:" — bientôt";font-size:.85em}
+.links [data-link].soon::after{content:""}
 .socials{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:40px}
 footer{border-top:1px solid var(--line);padding:24px clamp(16px,4vw,48px);display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--mute);flex-wrap:wrap;gap:12px}
 
@@ -253,6 +257,7 @@ footer{border-top:1px solid var(--line);padding:24px clamp(16px,4vw,48px);displa
     <a href="#projets">Projets</a>
     <a href="#parcours">Parcours</a>
     <a href="#contact">Contact</a>
+    <a data-link="cv" target="_blank" rel="noopener" class="nav-cv">CV ↗</a>
   </div>
   <button class="burger" id="burger">Menu</button>
 </nav>
@@ -272,7 +277,7 @@ footer{border-top:1px solid var(--line);padding:24px clamp(16px,4vw,48px);displa
     <p>Étudiant à l'École Supérieure Polytechnique de Dakar. Je modélise, je fabrique et je programme des systèmes mécaniques — du modèle 3D à la pièce finie.</p>
     <div class="cta">
       <a href="#projets" class="btn">Voir les projets →</a>
-      <a href="#contact" class="btn alt">Me contacter</a>
+      <a class="btn alt" data-link="cv" target="_blank" rel="noopener">Voir mon CV ↗</a>
     </div>
   </div>
   <div class="scroll-ind">DÉFILER</div>
@@ -335,8 +340,8 @@ footer{border-top:1px solid var(--line);padding:24px clamp(16px,4vw,48px);displa
     <h2 style="margin-top:20px"><a href="mailto:sowousmanee2008@gmail.com">Parlons<br>projet.</a></h2>
     <div class="socials">
       <a class="btn" href="mailto:sowousmanee2008@gmail.com">sowousmanee2008@gmail.com</a>
-      <a class="btn alt" href="tel:+221706020002">+221 70 602 00 02</a>
-      <!-- GitHub / CV : à ajouter -->
+      <a class="btn alt" data-link="cv" target="_blank" rel="noopener">Mon CV ↗</a>
+      <a class="btn alt" data-link="linkedin" target="_blank" rel="noopener">LinkedIn ↗</a>
     </div>
   </div>
 </section>
@@ -358,6 +363,14 @@ const LOGOS = {
   'MATLAB':`<path fill="#0076A8" d="M1 14.5l6.6-3.1 2.6 2.1-3 3.4z"/><path fill="#E16737" d="M7.6 11.4l2.6 2.1L15 2.6c1.7 2.7 4.6 9.3 8 13.6l-6.9 5.2c-2-4.4-3.6-7.6-5.9-7.9-1.6 1.7-2.9 2.5-4 2.4z"/><path fill="#BF4A1C" d="M15 2.6c-1.8 2.1-3.1 5.4-4.8 10.9 2.3.3 3.9 3.5 5.9 7.9l1-.8C15.3 14 15.6 7 15 2.6z"/>`,
   'Excel':`<path fill="#217346" d="M23 1.5q.41 0 .7.3.3.29.3.7v19q0 .41-.3.7-.29.3-.7.3H7q-.41 0-.7-.3-.3-.29-.3-.7V18H1q-.41 0-.7-.3-.3-.29-.3-.7V7q0-.41.3-.7Q.58 6 1 6h5V2.5q0-.41.3-.7.29-.3.7-.3zM6 13.28l1.42 2.66h2.14l-2.38-3.87 2.34-3.8H7.46l-1.3 2.4-.05.08-.04.09-.64-1.28-.66-1.29H2.59l2.27 3.82-2.48 3.85h2.16zM14.25 21v-3H7.5v3zm0-4.5v-3.75H12v3.75zm0-5.25V7.5H12v3.75zm0-5.25V3H7.5v3zm8.25 15v-3h-6.75v3zm0-4.5v-3.75h-6.75v3.75zm0-5.25V7.5h-6.75v3.75zm0-5.25V3h-6.75v3Z"/>`
 };
+
+// Liens externes : coller l'adresse entre les guillemets (vide = bouton grisé « bientôt »)
+const LINKS = {
+  cv: "",        // ex. "cv-ousmane-sow.pdf"
+  linkedin: ""   // ex. "https://www.linkedin.com/in/..."
+};
+document.querySelectorAll("[data-link]").forEach(a=>{const u=LINKS[a.dataset.link];
+  if(u)a.href=u;else{a.classList.add("soon");a.removeAttribute("target");a.addEventListener("click",e=>e.preventDefault())}});
 
 const SOFTWARE = [
   ["SolidWorks","CAO & simulation"],["KiCad","CAO électronique"],["Arduino IDE","Programmation"],
