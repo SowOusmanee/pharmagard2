@@ -36,8 +36,8 @@ h2{font-size:clamp(40px,7vw,80px)}
 h3{font-size:24px;letter-spacing:.04em}
 
 /* ---------- Nav ---------- */
-nav{position:fixed;inset:0 0 auto 0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:20px clamp(16px,4vw,48px);transition:background .4s,backdrop-filter .4s}
-nav.solid{background:rgba(245,243,239,.8);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav{position:fixed;inset:0 0 auto 0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:20px clamp(16px,4vw,48px);transition:background .4s,border-color .4s;border-bottom:1px solid transparent}
+nav.solid{background:rgba(245,243,239,.97);border-bottom-color:var(--line)}
 .logo{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.12em}
 .logo span{color:var(--accent)}
 .links{display:flex;gap:28px}
@@ -78,6 +78,7 @@ section{padding:clamp(80px,12vw,160px) clamp(16px,4vw,48px);position:relative}
 .wrap{max-width:1240px;margin:0 auto}
 .head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:64px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:28px}
 .head .num{font-family:var(--mono);font-size:12px;color:var(--accent)}
+.off *,.off *::after,.off{animation-play-state:paused!important}
 .reveal{opacity:0;transform:translateY(40px);transition:opacity 1s var(--ease),transform 1s var(--ease)}
 .reveal.in{opacity:1;transform:none}
 
@@ -145,7 +146,7 @@ section{padding:clamp(80px,12vw,160px) clamp(16px,4vw,48px);position:relative}
 /* Projets */
 .filters{display:flex;gap:8px;flex-wrap:wrap}
 .projects{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:24px;perspective:1400px}
-.card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:pointer;transform-style:preserve-3d;transition:transform .5s var(--ease),border-color .4s,opacity .5s,box-shadow .5s;will-change:transform}
+.card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:pointer;transform-style:preserve-3d;transition:transform .5s var(--ease),border-color .4s,opacity .5s,box-shadow .5s;}
 .card:hover{border-color:var(--line-2);box-shadow:0 40px 70px -30px rgba(60,50,30,.28)}
 .card.hide{display:none}
 .card .vis{aspect-ratio:16/10;position:relative;overflow:hidden;background:#faf9f6;border-bottom:1px solid var(--line)}
@@ -163,7 +164,7 @@ section{padding:clamp(80px,12vw,160px) clamp(16px,4vw,48px);position:relative}
 .placeholder-note{margin-top:32px;font-family:var(--mono);font-size:12px;color:var(--mute);border:1px dashed var(--line-2);padding:14px 18px;border-radius:4px}
 
 /* Modale */
-.modal{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:16px;background:rgba(20,20,20,.35);backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .4s}
+.modal{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:16px;background:rgba(20,20,20,.55);opacity:0;pointer-events:none;transition:opacity .4s}
 .modal.open{opacity:1;pointer-events:auto}
 .modal .box{background:var(--bg);border:1px solid var(--line-2);border-radius:8px;width:min(900px,100%);max-height:88vh;overflow:auto;transform:translateY(30px) rotateX(8deg);transition:transform .6s var(--ease)}
 .modal.open .box{transform:none}
@@ -197,7 +198,7 @@ section{padding:clamp(80px,12vw,160px) clamp(16px,4vw,48px);position:relative}
 /* Parcours */
 .timeline{position:relative;padding-left:40px}
 .timeline::before{content:"";position:absolute;left:7px;top:0;bottom:0;width:1px;background:var(--line)}
-.timeline .prog{position:absolute;left:7px;top:0;width:1px;background:var(--accent);height:0}
+.timeline .prog{position:absolute;left:7px;top:0;bottom:0;width:1px;background:var(--accent);transform:scaleY(0);transform-origin:top}
 .step{position:relative;padding:0 0 56px}
 .step::before{content:"";position:absolute;left:-38px;top:6px;width:11px;height:11px;border:1px solid var(--ink);background:var(--bg);transform:rotate(45deg)}
 .step .date{font-family:var(--mono);font-size:12px;color:var(--accent)}
@@ -477,11 +478,16 @@ domf.onclick=e=>{const f=e.target.dataset.f;if(!f)return;
   [...domf.children].forEach(b=>b.classList.toggle("on",b.dataset.f===f));
   document.querySelectorAll(".dom").forEach(d=>{const m=f==="Tous"||d.dataset.f===f;d.style.transitionDelay="0ms";d.classList.toggle("dim",!m);d.classList.toggle("hit",m&&f!=="Tous")})};
 // inclinaison 3D au survol (logiciels + domaines)
-document.querySelectorAll(".sw,.dom").forEach(el=>{
-  el.addEventListener("mousemove",e=>{const r=el.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
-    el.style.transitionDelay="0ms";el.style.transform=`rotateY(${(x-.5)*14}deg) rotateX(${(.5-y)*14}deg) translateZ(10px)`;el.style.setProperty("--gx",x*100+"%");el.style.setProperty("--gy",y*100+"%")});
-  el.addEventListener("mouseleave",()=>el.style.transform="");
-});
+// inclinaison limitée à une mise à jour par image (requestAnimationFrame)
+function tilt(el,deg,z){
+  let raf=0,ev=null,r=null;
+  el.addEventListener("mouseenter",()=>{r=el.getBoundingClientRect()});
+  el.addEventListener("mousemove",e=>{ev=e;if(raf)return;raf=requestAnimationFrame(()=>{raf=0;if(!r)r=el.getBoundingClientRect();
+    const x=(ev.clientX-r.left)/r.width,y=(ev.clientY-r.top)/r.height;
+    el.style.transitionDelay="0ms";el.style.transform=`rotateY(${(x-.5)*deg}deg) rotateX(${(.5-y)*deg}deg) translateZ(${z}px)`;el.style.setProperty("--gx",x*100+"%");el.style.setProperty("--gy",y*100+"%")})});
+  el.addEventListener("mouseleave",()=>{cancelAnimationFrame(raf);raf=0;r=null;el.style.transform=""});
+}
+document.querySelectorAll(".sw,.dom").forEach(el=>tilt(el,14,10));
 
 // Projets
 const grid=$("#projects"), filters=$("#filters");
@@ -494,9 +500,7 @@ filters.onclick=e=>{const f=e.target.dataset.f;if(!f)return;
 
 // Inclinaison 3D des cartes
 grid.querySelectorAll(".card").forEach(c=>{
-  c.addEventListener("mousemove",e=>{const r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
-    c.style.transform=`rotateY(${(x-.5)*10}deg) rotateX(${(.5-y)*10}deg) translateZ(0)`;c.style.setProperty("--gx",x*100+"%");c.style.setProperty("--gy",y*100+"%")});
-  c.addEventListener("mouseleave",()=>c.style.transform="");
+  tilt(c,10,0);
   c.addEventListener("click",()=>openModal(PROJECTS[c.dataset.i],+c.dataset.i));
 });
 
@@ -533,28 +537,36 @@ document.querySelectorAll(".reveal").forEach(el=>io.observe(el));
 
 // Nav : fond au scroll, lien actif, progression timeline
 const nav=$("#nav"), navLinks=[...document.querySelectorAll(".links a")];
-addEventListener("scroll",()=>{
-  nav.classList.toggle("solid",scrollY>40);
-  let cur="";document.querySelectorAll("section[id]").forEach(s=>{if(s.getBoundingClientRect().top<innerHeight*.4)cur=s.id});
-  navLinks.forEach(a=>a.classList.toggle("on",a.getAttribute("href")==="#"+cur));
-  const tl=$("#timeline").getBoundingClientRect();$("#prog").style.height=Math.max(0,Math.min(tl.height,innerHeight*.6-tl.top))+"px";
-},{passive:true});
+const tlEl=$("#timeline"),prog=$("#prog");let scrollRaf=0,solid=null;
+function onScroll(){scrollRaf=0;
+  const s=scrollY>40;if(s!==solid){solid=s;nav.classList.toggle("solid",s)}
+  const tl=tlEl.getBoundingClientRect();if(tl.top<innerHeight&&tl.bottom>0)prog.style.transform=`scaleY(${Math.max(0,Math.min(1,(innerHeight*.6-tl.top)/tl.height))})`;
+}
+addEventListener("scroll",()=>{if(!scrollRaf)scrollRaf=requestAnimationFrame(onScroll)},{passive:true});onScroll();
+const secIO=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)navLinks.forEach(a=>a.classList.toggle("on",a.getAttribute("href")==="#"+e.target.id))}),{rootMargin:"-40% 0px -55% 0px"});
+document.querySelectorAll("section[id]").forEach(sec=>secIO.observe(sec));
+// mettre en pause les animations hors écran (cartes, bandeau défilant)
+const vio=new IntersectionObserver(es=>es.forEach(e=>e.target.classList.toggle("off",!e.isIntersecting)));
+document.querySelectorAll(".card,.marquee,.sw").forEach(el=>vio.observe(el));
 $("#burger").onclick=()=>$("#links").classList.toggle("open");
 navLinks.forEach(a=>a.onclick=()=>$("#links").classList.remove("open"));
 
 // Curseur réticule + HUD
 const ret=$("#reticle");let mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
-addEventListener("mousemove",e=>{mx=e.clientX;my=e.clientY;$("#hx").textContent=String(mx).padStart(3,"0");$("#hy").textContent=String(my).padStart(3,"0")});
+const hx=$("#hx"),hy=$("#hy");let retRaf=0,heroVisible=true;
+function retLoop(){rx+=(mx-rx)*.25;ry+=(my-ry)*.25;ret.style.transform=`translate3d(${rx}px,${ry}px,0)`;
+  retRaf=(Math.abs(mx-rx)>.3||Math.abs(my-ry)>.3)?requestAnimationFrame(retLoop):0}
+addEventListener("mousemove",e=>{mx=e.clientX;my=e.clientY;if(heroVisible){hx.textContent=String(mx).padStart(3,"0");hy.textContent=String(my).padStart(3,"0")}if(!retRaf)retRaf=requestAnimationFrame(retLoop)},{passive:true});
 document.addEventListener("mouseover",e=>ret.classList.toggle("big",!!e.target.closest("a,button,.card")));
-(function loop(){rx+=(mx-rx)*.2;ry+=(my-ry)*.2;ret.style.transform=`translate(${rx}px,${ry}px)`;requestAnimationFrame(loop)})();
+
 
 /* =====================================================================
    Scène 3D — train d'engrenages réel (Three.js)
    ===================================================================== */
 (function(){
   if(!window.THREE)return;
-  const cv=$("#gl"), R=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
-  R.setPixelRatio(Math.min(devicePixelRatio,2));
+  const cv=$("#gl"), R=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true,powerPreference:"high-performance"});
+  R.setPixelRatio(Math.min(devicePixelRatio,innerWidth<860?1:1.5));
   const S=new THREE.Scene(), C=new THREE.PerspectiveCamera(35,1,.1,100);
   C.position.set(0,0,30);
 
@@ -573,7 +585,7 @@ document.addEventListener("mouseover",e=>ret.classList.toggle("big",!!e.target.c
   const assembly=new THREE.Group();S.add(assembly);
   const m=.25;
   function makeGear(teeth,depth,mat){
-    const rp=teeth*m/2, g=new THREE.ExtrudeGeometry(gearShape(teeth,rp,m),{depth,bevelEnabled:true,bevelThickness:.04,bevelSize:.03,bevelSegments:2,curveSegments:24});
+    const rp=teeth*m/2, g=new THREE.ExtrudeGeometry(gearShape(teeth,rp,m),{depth,bevelEnabled:true,bevelThickness:.04,bevelSize:.03,bevelSegments:1,curveSegments:12});
     g.translate(0,0,-depth/2);
     const mesh=new THREE.Mesh(g,mat);mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(g,25),edgeM));
     const grp=new THREE.Group();grp.add(mesh);grp.userData={teeth,rp};return grp;
@@ -600,14 +612,18 @@ document.addEventListener("mouseover",e=>ret.classList.toggle("big",!!e.target.c
   addEventListener("resize",size);size();
 
   let tx=0,ty=0,cx=0,cy=0,speed=1,boost=0;
-  addEventListener("mousemove",e=>{tx=(e.clientX/innerWidth-.5);ty=(e.clientY/innerHeight-.5)});
+  addEventListener("mousemove",e=>{tx=(e.clientX/innerWidth-.5);ty=(e.clientY/innerHeight-.5)},{passive:true});
   cv.parentElement.addEventListener("mousedown",()=>boost=1);
   addEventListener("mouseup",()=>boost=0);
-  let t=0,last=performance.now(),visible=true;
-  new IntersectionObserver(([e])=>visible=e.isIntersecting).observe(cv);
-  (function frame(now){
+  let t=0,last=performance.now(),visible=true,running=false,lastRpm=-1;
+  const rpmEl=$("#rpm");
+  function start(){if(!running&&visible&&!document.hidden){running=true;last=performance.now();requestAnimationFrame(frame)}}
+  new IntersectionObserver(([e])=>{visible=heroVisible=e.isIntersecting;start()}).observe(cv);
+  document.addEventListener("visibilitychange",start);
+  function frame(now){
+    if(!visible||document.hidden){running=false;return}
     requestAnimationFrame(frame);
-    const dt=Math.min((now-last)/1000,.05);last=now;if(!visible)return;
+    const dt=Math.min((now-last)/1000,.05);last=now;
     speed+=((boost?6:1)-speed)*.05;
     t+=dt*.4*speed;
     const w1=t;
@@ -619,9 +635,10 @@ document.addEventListener("mouseover",e=>ret.classList.toggle("big",!!e.target.c
     assembly.rotation.y=-.55+cx*.6+sc*.8;
     assembly.rotation.x=.35+cy*.4-sc*.3;
     C.position.z=30+sc*8;
-    $("#rpm").textContent=Math.round(speed*24);
+    const rpm=Math.round(speed*24);if(rpm!==lastRpm){lastRpm=rpm;rpmEl.textContent=rpm}
     R.render(S,C);
-  })(last);
+  }
+  start();
 })();
 </script>
 </body>
