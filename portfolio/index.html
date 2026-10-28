@@ -290,7 +290,7 @@ footer{border-top:1px solid var(--line);padding:24px clamp(16px,4vw,48px);displa
       <div class="reveal">
         <p class="lead">Esprit d'analyse, <mark>pratique d'atelier</mark> et sens du travail en équipe.</p>
         <div class="stats">
-          <div class="stat"><b data-count="4">0</b><small>Projets</small></div>
+          <div class="stat"><b data-count="5">0</b><small>Projets</small></div>
           <div class="stat"><b data-count="7">0</b><small>Logiciels</small></div>
           <div class="stat"><b data-count="4">0</b><small>Langues</small></div>
         </div>
@@ -412,6 +412,13 @@ const PROJECTS = [
    details:["Coordination de l'équipe et organisation du travail","Recherche documentaire : composition et traitements thermiques (O, T4, T6)","Traitement des mesures et tracé de la courbe contrainte–déformation","Calcul des caractéristiques mécaniques (Re, Rm, E, A, énergie)","Simulation non linéaire de l'éprouvette : contraintes, déformations, déplacements","Comparaison et interprétation des écarts essai / simulation"],
    gallery:[["img/traction-von-mises.jpg","Contraintes de von Mises"],["img/traction-deformations.jpg","Déformations équivalentes"],["img/traction-deplacements.jpg","Déplacements résultants"],["img/traction-modele.jpg","Modèle 3D de l'éprouvette"],["img/traction-eprouvette.jpg","Éprouvette normalisée ASTM E8"],["img/traction-machine.jpg","Machine d'essai de traction"]],
    role:"Chef d'équipe", duration:"", team:"Équipe"},
+  {title:"Toppema-Bot — robot suiveur d'opérateur",cat:"Robotique",year:"2026",visual:"img/robot-3d.jpg",
+   desc:"Robot porte-charge qui suit automatiquement un opérateur en atelier grâce à un badge UWB, pour transporter outils et pièces les mains libres. J'ai conçu l'ensemble du schéma électronique du robot sous KiCad.",
+   tags:["KiCad","Électronique","ESP32","Robotique"],
+   figures:[["24 V","Alimentation LiFePO4"],["UWB","Suivi de l'opérateur"],["120°","Détection d'obstacles"],["4 blocs","Puissance · contrôle · capteurs · IHM"]],
+   details:["Conception complète du schéma électronique sous KiCad, organisé en blocs fonctionnels","Chaîne de puissance et sécurité : batterie 24 V, interrupteur général, arrêt d'urgence et régulation de tension vers 3,3 V","Carte de contrôle autour d'un microcontrôleur ESP32 et commande des deux moteurs par pont en H","Raccordement des capteurs : module UWB de localisation, centrale inertielle et capteurs à ultrasons","Interface homme-machine : écran, voyants d'état, buzzer, clavier à code et servomoteur de verrouillage du coffre","Attribution des broches et des bus de communication (I2C, SPI, PWM)"],
+   gallery:[["img/robot-3d.jpg","Modèle 3D du robot"],["img/robot-schema.jpg","Schéma électronique complet (KiCad)"],["img/robot-puissance.jpg","Bloc puissance et sécurité"],["img/robot-controle.jpg","Bloc contrôle : microcontrôleur et pont en H"],["img/robot-localisation.jpg","Localisation UWB, centrale inertielle et ultrasons"],["img/robot-ihm.jpg","Interface homme-machine"]],
+   role:"Schéma électronique", duration:"", team:"Équipe"},
   {title:"Tourne-à-gauche",cat:"Fabrication",year:"2026",visual:"lathe",
    desc:"Fabrication complète d'un outil d'atelier, de la lecture du plan au contrôle final.",
    tags:["Tournage","Fraisage","Métrologie"],
